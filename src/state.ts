@@ -53,12 +53,14 @@ export function isSubmitTab(state: AskState): boolean {
 }
 
 export function getRenderableOptions(question?: AskQuestion): RenderOption[] {
-	if (!question) return [];
+	if (!question) {
+		return [];
+	}
 	const options: RenderOption[] = [...question.options];
 	if (question.allowOther) {
 		options.push({
 			value: OTHER_VALUE,
-			label: "Type something.",
+			label: "Type your own",
 			isOther: true,
 		});
 	}

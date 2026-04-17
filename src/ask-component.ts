@@ -5,6 +5,7 @@ import {
 	Key,
 	matchesKey,
 	truncateToWidth,
+	visibleWidth,
 } from "@mariozechner/pi-tui";
 import {
 	allRequiredAnswered,
@@ -12,6 +13,8 @@ import {
 	cancelFlow,
 	confirmCurrentSelection,
 	createInitialState,
+	enterInputMode,
+	exitInputMode,
 	getAnswer,
 	getCurrentQuestion,
 	getRenderableOptions,
@@ -29,9 +32,14 @@ export async function runAskFlow(
 	ctx: ExtensionContext,
 	params: AskParams,
 ): Promise<AskResult> {
-	return ctx.ui.custom<AskResult>((tui, theme, _keybindings, done) => {
+	return ctx.ui.custom<AskResult>((tui, theme, keybindings, done) => {
 		let state: AskState = createInitialState(params);
 		let cachedLines: string[] | undefined;
+		let inputEscapePending = false;
+		let suppressAutoInputForSelection = false;
+		const newLineHint = formatKeybindingLabel(
+			keybindings.getKeys("tui.input.newLine")[0] ?? "shift+enter",
+		);
 
 		const editorTheme: EditorTheme = {
 			borderColor: (s) => theme.fg("accent", s),
@@ -46,6 +54,8 @@ export async function runAskFlow(
 		const editor = new Editor(tui, editorTheme);
 
 		editor.onSubmit = (value) => {
+			inputEscapePending = false;
+			suppressAutoInputForSelection = false;
 			state = submitCustomAnswer(state, value);
 			editor.setText("");
 			refresh();
@@ -63,52 +73,131 @@ export async function runAskFlow(
 			}
 		}
 
+		function hydrateEditorForInputMode() {
+			if (state.mode !== "input" || !state.inputQuestionId) {
+				return;
+			}
+			const existingText =
+				getAnswer(state, state.inputQuestionId)?.customText ?? "";
+			editor.setText(existingText);
+		}
+
+		function syncInputModeWithSelection() {
+			if (isSubmitTab(state)) {
+				return;
+			}
+
+			const question = getCurrentQuestion(state);
+			if (!question) {
+				return;
+			}
+
+			const option = getRenderableOptions(question)[state.optionIndex];
+			if (
+				!option?.isOther ||
+				suppressAutoInputForSelection ||
+				state.mode === "input"
+			) {
+				return;
+			}
+
+			state = enterInputMode(state, question.id);
+			inputEscapePending = false;
+			hydrateEditorForInputMode();
+		}
+
+		syncInputModeWithSelection();
+
 		function handleInput(data: string) {
 			if (state.mode === "input") {
+				if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
+					state = exitInputMode(state);
+					suppressAutoInputForSelection = false;
+					inputEscapePending = false;
+					state = moveTab(state, 1);
+					syncInputModeWithSelection();
+					refresh();
+					return;
+				}
+				if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
+					state = exitInputMode(state);
+					suppressAutoInputForSelection = false;
+					inputEscapePending = false;
+					state = moveTab(state, -1);
+					syncInputModeWithSelection();
+					refresh();
+					return;
+				}
 				if (matchesKey(data, Key.escape)) {
-					state = cancelFlow(state);
-					if (!state.completed) {
+					if (editor.getText().trim().length === 0 || inputEscapePending) {
+						state = exitInputMode(state);
+						suppressAutoInputForSelection = true;
+						inputEscapePending = false;
 						refresh();
 						return;
 					}
-					maybeFinish();
+					inputEscapePending = true;
+					refresh();
 					return;
 				}
+				inputEscapePending = false;
 				editor.handleInput(data);
 				refresh();
 				return;
 			}
 
 			if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = moveTab(state, 1);
+				syncInputModeWithSelection();
 				refresh();
 				return;
 			}
 			if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = moveTab(state, -1);
+				syncInputModeWithSelection();
 				refresh();
 				return;
 			}
 			if (matchesKey(data, Key.up)) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = moveOption(state, -1);
+				syncInputModeWithSelection();
 				refresh();
 				return;
 			}
 			if (matchesKey(data, Key.down)) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = moveOption(state, 1);
+				syncInputModeWithSelection();
 				refresh();
 				return;
 			}
 			if (matchesKey(data, Key.space)) {
 				const question = getCurrentQuestion(state);
 				if (question?.type === "multi") {
+					suppressAutoInputForSelection = false;
+					inputEscapePending = false;
 					state = toggleCurrentMultiOption(state);
+					if (state.mode === "input") {
+						hydrateEditorForInputMode();
+					}
 					refresh();
 					return;
 				}
 			}
 			if (matchesKey(data, Key.enter)) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = confirmCurrentSelection(state);
+				if (state.mode === "input") {
+					hydrateEditorForInputMode();
+				}
 				refresh();
 				maybeFinish();
 				return;
@@ -122,7 +211,12 @@ export async function runAskFlow(
 
 			const digit = parseDigit(data);
 			if (digit !== null) {
+				suppressAutoInputForSelection = false;
+				inputEscapePending = false;
 				state = applyNumberShortcut(state, digit);
+				if (state.mode === "input") {
+					hydrateEditorForInputMode();
+				}
 				refresh();
 				return;
 			}
@@ -176,20 +270,22 @@ export async function runAskFlow(
 						}
 						add();
 					}
-				}
-
-				if (state.mode === "input") {
-					add();
-					add(` ${theme.fg("muted", "Your answer:")}`);
-					for (const editorLine of editor.render(Math.max(1, width - 2))) {
-						add(` ${editorLine}`);
+					if (option.isOther && selected && state.mode === "input") {
+						for (const editorLine of editor.render(Math.max(8, width - 7))) {
+							add(`     ${renderInputLine(editorLine, width - 5, theme)}`);
+						}
+						add(
+							`     ${theme.fg("dim", inputEscapePending ? `${newLineHint} newline · Enter submit · Esc again to go back` : `${newLineHint} newline · Enter submit · Esc to go back if empty`)}`,
+						);
 					}
-					add();
 				}
 			}
 
-			add();
-			add(renderFooter(state, theme));
+			const footer = renderFooter(state, theme);
+			if (footer) {
+				add();
+				add(footer);
+			}
 			add(theme.fg("accent", "─".repeat(Math.max(1, width))));
 
 			cachedLines = lines;
@@ -276,7 +372,7 @@ function renderFooter(
 	theme: ExtensionContext["ui"]["theme"],
 ): string {
 	if (state.mode === "input") {
-		return theme.fg("dim", " Enter submit · Esc go back");
+		return "";
 	}
 
 	const question = getCurrentQuestion(state);
@@ -297,4 +393,27 @@ function renderFooter(
 
 function parseDigit(data: string): number | null {
 	return /^[1-9]$/.test(data) ? Number(data) : null;
+}
+
+function renderInputLine(
+	line: string,
+	availableWidth: number,
+	theme: ExtensionContext["ui"]["theme"],
+): string {
+	const innerWidth = Math.max(4, availableWidth - 2);
+	const truncated = truncateToWidth(line, innerWidth);
+	const padding = " ".repeat(Math.max(0, innerWidth - visibleWidth(truncated)));
+	return theme.bg("toolPendingBg", ` ${truncated}${padding} `);
+}
+
+function formatKeybindingLabel(key: string): string {
+	return key
+		.split("+")
+		.map((part) => {
+			if (part.length <= 1) {
+				return part.toUpperCase();
+			}
+			return part.charAt(0).toUpperCase() + part.slice(1);
+		})
+		.join("+");
 }

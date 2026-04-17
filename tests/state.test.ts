@@ -58,7 +58,7 @@ test("normalize defaults via initial state", () => {
 	assert.equal(state.questions[0].required, true);
 	assert.equal(
 		getRenderableOptions(state.questions[0]).at(-1)?.label,
-		"Type something.",
+		"Type your own",
 	);
 });
 
