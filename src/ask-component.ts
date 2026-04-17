@@ -8,13 +8,11 @@ import {
 	visibleWidth,
 } from "@mariozechner/pi-tui";
 import {
-	allRequiredAnswered,
 	applyNumberShortcut,
 	cancelFlow,
 	confirmCurrentSelection,
 	createInitialState,
 	enterInputMode,
-	exitInputMode,
 	getAnswer,
 	getCurrentQuestion,
 	getRenderableOptions,
@@ -22,6 +20,7 @@ import {
 	isSubmitTab,
 	moveOption,
 	moveTab,
+	saveCustomAnswer,
 	submitCustomAnswer,
 	toAskResult,
 	toggleCurrentMultiOption,
@@ -35,7 +34,6 @@ export async function runAskFlow(
 	return ctx.ui.custom<AskResult>((tui, theme, keybindings, done) => {
 		let state: AskState = createInitialState(params);
 		let cachedLines: string[] | undefined;
-		let inputEscapePending = false;
 		let suppressAutoInputForSelection = false;
 		const newLineHint = formatKeybindingLabel(
 			keybindings.getKeys("tui.input.newLine")[0] ?? "shift+enter",
@@ -54,7 +52,6 @@ export async function runAskFlow(
 		const editor = new Editor(tui, editorTheme);
 
 		editor.onSubmit = (value) => {
-			inputEscapePending = false;
 			suppressAutoInputForSelection = false;
 			state = submitCustomAnswer(state, value);
 			editor.setText("");
@@ -102,7 +99,6 @@ export async function runAskFlow(
 			}
 
 			state = enterInputMode(state, question.id);
-			inputEscapePending = false;
 			hydrateEditorForInputMode();
 		}
 
@@ -111,36 +107,27 @@ export async function runAskFlow(
 		function handleInput(data: string) {
 			if (state.mode === "input") {
 				if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
-					state = exitInputMode(state);
+					state = saveCustomAnswer(state, editor.getText());
 					suppressAutoInputForSelection = false;
-					inputEscapePending = false;
 					state = moveTab(state, 1);
 					syncInputModeWithSelection();
 					refresh();
 					return;
 				}
 				if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
-					state = exitInputMode(state);
+					state = saveCustomAnswer(state, editor.getText());
 					suppressAutoInputForSelection = false;
-					inputEscapePending = false;
 					state = moveTab(state, -1);
 					syncInputModeWithSelection();
 					refresh();
 					return;
 				}
 				if (matchesKey(data, Key.escape)) {
-					if (editor.getText().trim().length === 0 || inputEscapePending) {
-						state = exitInputMode(state);
-						suppressAutoInputForSelection = true;
-						inputEscapePending = false;
-						refresh();
-						return;
-					}
-					inputEscapePending = true;
+					state = saveCustomAnswer(state, editor.getText());
+					suppressAutoInputForSelection = true;
 					refresh();
 					return;
 				}
-				inputEscapePending = false;
 				editor.handleInput(data);
 				refresh();
 				return;
@@ -148,7 +135,6 @@ export async function runAskFlow(
 
 			if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = moveTab(state, 1);
 				syncInputModeWithSelection();
 				refresh();
@@ -156,7 +142,6 @@ export async function runAskFlow(
 			}
 			if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = moveTab(state, -1);
 				syncInputModeWithSelection();
 				refresh();
@@ -164,7 +149,6 @@ export async function runAskFlow(
 			}
 			if (matchesKey(data, Key.up)) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = moveOption(state, -1);
 				syncInputModeWithSelection();
 				refresh();
@@ -172,7 +156,6 @@ export async function runAskFlow(
 			}
 			if (matchesKey(data, Key.down)) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = moveOption(state, 1);
 				syncInputModeWithSelection();
 				refresh();
@@ -182,7 +165,6 @@ export async function runAskFlow(
 				const question = getCurrentQuestion(state);
 				if (question?.type === "multi") {
 					suppressAutoInputForSelection = false;
-					inputEscapePending = false;
 					state = toggleCurrentMultiOption(state);
 					if (state.mode === "input") {
 						hydrateEditorForInputMode();
@@ -193,7 +175,6 @@ export async function runAskFlow(
 			}
 			if (matchesKey(data, Key.enter)) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = confirmCurrentSelection(state);
 				if (state.mode === "input") {
 					hydrateEditorForInputMode();
@@ -212,7 +193,6 @@ export async function runAskFlow(
 			const digit = parseDigit(data);
 			if (digit !== null) {
 				suppressAutoInputForSelection = false;
-				inputEscapePending = false;
 				state = applyNumberShortcut(state, digit);
 				if (state.mode === "input") {
 					hydrateEditorForInputMode();
@@ -247,16 +227,23 @@ export async function runAskFlow(
 				add();
 
 				const isMulti = question.type === "multi";
+				const answer = getAnswer(state, question.id);
 				for (let i = 0; i < options.length; i++) {
 					const option = options[i];
 					const selected = i === state.optionIndex;
-					const checked = !!getAnswer(state, question.id)?.values.includes(
-						option.value,
-					);
+					const isAnsweredOption = option.isOther
+						? !!answer?.customText
+						: !!answer?.values.includes(option.value);
 					const pointer = selected ? theme.fg("accent", "❯ ") : "  ";
 					const prefix =
-						isMulti && !option.isOther ? `[${checked ? "x" : " "}] ` : "";
-					const optionColor = selected ? "accent" : "text";
+						isMulti && !option.isOther
+							? `[${isAnsweredOption ? "x" : " "}] `
+							: "";
+					const optionColor = isAnsweredOption
+						? "success"
+						: selected
+							? "accent"
+							: "text";
 					add(
 						`${pointer}${theme.fg(optionColor, `${i + 1}. ${prefix}${option.label}`)}`,
 					);
@@ -275,8 +262,16 @@ export async function runAskFlow(
 							add(`     ${renderInputLine(editorLine, width - 5, theme)}`);
 						}
 						add(
-							`     ${theme.fg("dim", inputEscapePending ? `${newLineHint} newline · Enter submit · Esc again to go back` : `${newLineHint} newline · Enter submit · Esc to go back if empty`)}`,
+							`     ${theme.fg("dim", `${newLineHint} newline · Enter submit · Esc save and close`)}`,
 						);
+					}
+					if (option.isOther && state.mode !== "input") {
+						const customText = answer?.customText;
+						if (customText) {
+							for (const customLine of customText.split("\n")) {
+								add(`     ${theme.fg("muted", customLine)}`);
+							}
+						}
 					}
 				}
 			}
@@ -326,7 +321,7 @@ function renderTabs(
 	segments.push(
 		submitActive
 			? theme.bg("selectedBg", theme.fg("text", submitText))
-			: theme.fg(allRequiredAnswered(state) ? "success" : "dim", submitText),
+			: theme.fg("success", submitText),
 	);
 	segments.push(theme.fg("dim", " →"));
 
@@ -346,15 +341,18 @@ function renderSubmit(
 	for (const question of state.questions) {
 		const answer = getAnswer(state, question.id);
 		add(` ${theme.fg("muted", `● ${question.prompt}`)}`);
+		if (!answer) {
+			add(`   ${theme.fg("warning", "→ (unanswered)")}`);
+			continue;
+		}
+		const answerText = answer.customText ?? answer.labels.join(", ");
 		add(
-			`   ${theme.fg("text", `→ ${answer ? answer.labels.join(", ") : "(unanswered)"}`)}`,
+			`   ${theme.fg(answer.customText ? "text" : "success", `→ ${answerText}`)}`,
 		);
 	}
 
 	add();
-	add(
-		` ${allRequiredAnswered(state) ? theme.fg("success", "Ready to submit your answers?") : theme.fg("warning", "Answer all required questions before submitting.")}`,
-	);
+	add(` ${theme.fg("success", "Ready to submit your answers?")}`);
 	add();
 
 	const options = ["Submit answers", "Cancel"];
@@ -385,10 +383,7 @@ function renderFooter(
 			" ⇆ tab · ↑↓ select · space toggle · enter continue · esc dismiss · 1-9 quick toggle",
 		);
 	}
-	return theme.fg(
-		"dim",
-		" ⇆ tab · ↑↓ select · enter confirm · esc dismiss · 1-9 quick select",
-	);
+	return theme.fg("dim", " ⇆ tab · ↑↓ select · enter confirm · esc dismiss");
 }
 
 function parseDigit(data: string): number | null {

@@ -36,7 +36,7 @@ export const AskQuestionSchema = Type.Object({
 	),
 	required: Type.Optional(
 		Type.Boolean({
-			description: "Whether an answer is required before submit",
+			description: "Optional metadata flag; submit is never blocked",
 		}),
 	),
 	options: Type.Array(AskOptionSchema, {

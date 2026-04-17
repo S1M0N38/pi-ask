@@ -82,16 +82,7 @@ export function isQuestionAnswered(
 	return !!answer && answer.labels.length > 0;
 }
 
-export function allRequiredAnswered(state: AskState): boolean {
-	return state.questions.every(
-		(question) => !question.required || isQuestionAnswered(state, question.id),
-	);
-}
-
 export function moveTab(state: AskState, delta: number): AskState {
-	if (state.questions.length <= 1 && delta !== 0) {
-		return state;
-	}
 	const totalTabs = state.questions.length + 1;
 	const currentTab = (state.currentTab + delta + totalTabs) % totalTabs;
 	return {
@@ -157,10 +148,7 @@ export function confirmCurrentSelection(state: AskState): AskState {
 		if (state.submitIndex === 1) {
 			return { ...state, cancelled: true, completed: true };
 		}
-		if (allRequiredAnswered(state)) {
-			return { ...state, completed: true };
-		}
-		return state;
+		return { ...state, completed: true };
 	}
 
 	const question = getCurrentQuestion(state);
@@ -210,33 +198,48 @@ export function applyNumberShortcut(state: AskState, digit: number): AskState {
 	return advanceToNextTab(nextState);
 }
 
-export function submitCustomAnswer(
-	state: AskState,
-	rawValue: string,
-): AskState {
+export function saveCustomAnswer(state: AskState, rawValue: string): AskState {
 	const question = state.questions.find(
 		(item) => item.id === state.inputQuestionId,
 	);
 	if (!question) return exitInputMode(state);
 
 	const trimmed = rawValue.trim();
+	const nextState = exitInputMode(state);
 	if (!trimmed) {
-		return exitInputMode(state);
+		const answers = { ...nextState.answers };
+		delete answers[question.id];
+		return {
+			...nextState,
+			answers,
+		};
 	}
 
 	const answer: AskAnswer = {
-		values: [trimmed],
-		labels: [trimmed],
+		values: [rawValue],
+		labels: [rawValue],
 		indices: [],
-		customText: trimmed,
+		customText: rawValue,
 	};
-	return advanceToNextTab({
-		...exitInputMode(state),
+	return {
+		...nextState,
 		answers: {
-			...state.answers,
+			...nextState.answers,
 			[question.id]: answer,
 		},
-	});
+	};
+}
+
+export function submitCustomAnswer(
+	state: AskState,
+	rawValue: string,
+): AskState {
+	const questionId = state.inputQuestionId;
+	const nextState = saveCustomAnswer(state, rawValue);
+	if (!questionId || !getAnswer(nextState, questionId)) {
+		return nextState;
+	}
+	return advanceToNextTab(nextState);
 }
 
 export function cancelFlow(state: AskState): AskState {

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
-	allRequiredAnswered,
 	applyNumberShortcut,
 	cancelFlow,
 	confirmCurrentSelection,
 	createInitialState,
+	saveCustomAnswer,
 	getRenderableOptions,
 	moveOption,
 	moveTab,
@@ -84,7 +84,17 @@ test("multi-select space toggles current option and enter advances to submit", (
 	state = confirmCurrentSelection(state);
 	assert.equal(state.mode, "submit");
 	assert.equal(state.currentTab, 2);
-	assert.equal(allRequiredAnswered(state), true);
+	assert.equal(state.completed, false);
+});
+
+test("submit can complete even when some questions are unanswered", () => {
+	let state = createInitialState(sampleParams());
+	state = moveTab(state, -1);
+	assert.equal(state.mode, "submit");
+	state = confirmCurrentSelection(state);
+
+	assert.equal(state.completed, true);
+	assert.equal(state.cancelled, false);
 });
 
 test("selecting other enters input mode and custom submit stores typed answer", () => {
@@ -106,10 +116,66 @@ test("selecting other enters input mode and custom submit stores typed answer", 
 	assert.equal(state.mode, "submit");
 });
 
+test("escape saves typed custom answer without advancing", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Other?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 2);
+	assert.equal(state.mode, "input");
+	state = saveCustomAnswer(state, "my draft answer");
+
+	assert.equal(state.mode, "navigate");
+	assert.equal(state.currentTab, 0);
+	assert.equal(state.answers.q1.customText, "my draft answer");
+});
+
+test("empty custom draft clears the stored answer", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Other?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 2);
+	state = saveCustomAnswer(state, "my answer");
+	state = applyNumberShortcut(state, 2);
+	state = saveCustomAnswer(state, "   ");
+
+	assert.equal(state.answers.q1, undefined);
+	assert.equal(state.mode, "navigate");
+});
+
 test("tab navigation wraps including submit tab", () => {
 	let state = createInitialState(sampleParams());
 	state = moveTab(state, -1);
 	assert.equal(state.currentTab, 2);
+	assert.equal(state.mode, "submit");
+
+	state = moveTab(state, 1);
+	assert.equal(state.currentTab, 0);
+	assert.equal(state.mode, "navigate");
+});
+
+test("tab navigation works with a single question", () => {
+	let state = createInitialState({
+		questions: [
+			{ id: "q", prompt: "Q?", options: [{ value: "a", label: "A" }] },
+		],
+	});
+
+	state = moveTab(state, -1);
+	assert.equal(state.currentTab, 1);
 	assert.equal(state.mode, "submit");
 
 	state = moveTab(state, 1);
