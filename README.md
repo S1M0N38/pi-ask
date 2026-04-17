@@ -151,9 +151,35 @@ The current prototype supports:
 - single-select questions
 - multi-select questions
 - preview questions with a dedicated preview pane
+- free-form answers via `Type your own`
+- per-question notes via `Ctrl+N`
+- per-option notes via `N`
+- full inline rendering of saved notes
 - number-key quick selection
 - final submit/review page
 - transcript rendering for call/result rows
+
+### Result shape notes
+
+The returned `details.answers[questionId]` object may include:
+
+```ts
+{
+  values: string[]
+  labels: string[]
+  customText?: string
+  note?: string // question-level note
+  optionNotes?: Record<string, string> // selected options only
+}
+```
+
+Behavior:
+
+- question-level notes are submitted whenever authored
+- option notes can be authored for any active option during the UI flow
+- only notes for currently selected options are included in the submitted result
+- deselecting an option keeps its note in UI state, so re-selecting it restores the note
+- empty note text clears the note
 
 ## Example agent instruction
 

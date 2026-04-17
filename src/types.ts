@@ -34,6 +34,7 @@ export interface AskAnswer {
 	indices: number[];
 	customText?: string;
 	note?: string;
+	optionNotes?: Record<string, string>;
 }
 
 export interface AskResult {
@@ -48,7 +49,7 @@ export interface AskResult {
 	answers: Record<string, AskAnswer>;
 }
 
-export type ViewMode = "navigate" | "input" | "submit";
+export type ViewMode = "navigate" | "input" | "note" | "submit";
 
 export interface AskState {
 	title?: string;
@@ -58,6 +59,8 @@ export interface AskState {
 	submitIndex: number;
 	mode: ViewMode;
 	inputQuestionId: string | null;
+	noteQuestionId: string | null;
+	noteOptionValue: string | null;
 	answers: Record<string, AskAnswer>;
 	completed: boolean;
 	cancelled: boolean;

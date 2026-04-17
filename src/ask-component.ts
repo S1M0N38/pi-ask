@@ -14,14 +14,19 @@ import {
 	confirmCurrentSelection,
 	createInitialState,
 	enterInputMode,
+	enterOptionNoteMode,
+	enterQuestionNoteMode,
 	getAnswer,
 	getCurrentQuestion,
+	getOptionNote,
+	getQuestionNote,
 	getRenderableOptions,
 	isQuestionAnswered,
 	isSubmitTab,
 	moveOption,
 	moveTab,
 	saveCustomAnswer,
+	saveNote,
 	submitCustomAnswer,
 	toAskResult,
 	toggleCurrentMultiOption,
@@ -54,7 +59,11 @@ export async function runAskFlow(
 
 		editor.onSubmit = (value) => {
 			suppressAutoInputForSelection = false;
-			state = submitCustomAnswer(state, value);
+			if (state.mode === "input") {
+				state = submitCustomAnswer(state, value);
+			} else if (state.mode === "note") {
+				state = saveNote(state, value);
+			}
 			editor.setText("");
 			refresh();
 			maybeFinish();
@@ -71,17 +80,25 @@ export async function runAskFlow(
 			}
 		}
 
-		function hydrateEditorForInputMode() {
-			if (state.mode !== "input" || !state.inputQuestionId) {
+		function hydrateEditorForCurrentMode() {
+			if (state.mode === "input" && state.inputQuestionId) {
+				const existingText =
+					getAnswer(state, state.inputQuestionId)?.customText ?? "";
+				editor.setText(existingText);
 				return;
 			}
-			const existingText =
-				getAnswer(state, state.inputQuestionId)?.customText ?? "";
+			if (state.mode !== "note" || !state.noteQuestionId) {
+				return;
+			}
+			const existingText = state.noteOptionValue
+				? (getOptionNote(state, state.noteQuestionId, state.noteOptionValue) ??
+					"")
+				: (getQuestionNote(state, state.noteQuestionId) ?? "");
 			editor.setText(existingText);
 		}
 
 		function syncInputModeWithSelection() {
-			if (isSubmitTab(state)) {
+			if (state.mode === "note" || isSubmitTab(state)) {
 				return;
 			}
 
@@ -100,32 +117,28 @@ export async function runAskFlow(
 			}
 
 			state = enterInputMode(state, question.id);
-			hydrateEditorForInputMode();
+			hydrateEditorForCurrentMode();
 		}
 
 		syncInputModeWithSelection();
 
 		function handleInput(data: string) {
-			if (state.mode === "input") {
+			if (state.mode === "input" || state.mode === "note") {
 				if (matchesKey(data, Key.tab) || matchesKey(data, Key.right)) {
-					state = saveCustomAnswer(state, editor.getText());
-					suppressAutoInputForSelection = false;
-					state = moveTab(state, 1);
+					state = saveEditorAndMoveTab(1);
 					syncInputModeWithSelection();
 					refresh();
 					return;
 				}
 				if (matchesKey(data, Key.shift("tab")) || matchesKey(data, Key.left)) {
-					state = saveCustomAnswer(state, editor.getText());
-					suppressAutoInputForSelection = false;
-					state = moveTab(state, -1);
+					state = saveEditorAndMoveTab(-1);
 					syncInputModeWithSelection();
 					refresh();
 					return;
 				}
 				if (matchesKey(data, Key.escape)) {
-					state = saveCustomAnswer(state, editor.getText());
-					suppressAutoInputForSelection = true;
+					state = saveEditorWithoutAdvancing();
+					suppressAutoInputForSelection = state.mode !== "input";
 					refresh();
 					return;
 				}
@@ -168,17 +181,38 @@ export async function runAskFlow(
 					suppressAutoInputForSelection = false;
 					state = toggleCurrentMultiOption(state);
 					if (state.mode === "input") {
-						hydrateEditorForInputMode();
+						hydrateEditorForCurrentMode();
 					}
 					refresh();
 					return;
 				}
 			}
+			if (isQuestionNoteShortcut(data)) {
+				const question = getCurrentQuestion(state);
+				if (question && !isSubmitTab(state)) {
+					state = enterQuestionNoteMode(state, question.id);
+					hydrateEditorForCurrentMode();
+					refresh();
+				}
+				return;
+			}
+			if (isOptionNoteShortcut(data)) {
+				const question = getCurrentQuestion(state);
+				const option = question
+					? getRenderableOptions(question)[state.optionIndex]
+					: undefined;
+				if (question && option && !option.isOther && !isSubmitTab(state)) {
+					state = enterOptionNoteMode(state, question.id, option.value);
+					hydrateEditorForCurrentMode();
+					refresh();
+				}
+				return;
+			}
 			if (matchesKey(data, Key.enter)) {
 				suppressAutoInputForSelection = false;
 				state = confirmCurrentSelection(state);
 				if (state.mode === "input") {
-					hydrateEditorForInputMode();
+					hydrateEditorForCurrentMode();
 				}
 				refresh();
 				maybeFinish();
@@ -196,11 +230,26 @@ export async function runAskFlow(
 				suppressAutoInputForSelection = false;
 				state = applyNumberShortcut(state, digit);
 				if (state.mode === "input") {
-					hydrateEditorForInputMode();
+					hydrateEditorForCurrentMode();
 				}
 				refresh();
-				return;
 			}
+		}
+
+		function saveEditorWithoutAdvancing(): AskState {
+			const text = editor.getText();
+			editor.setText("");
+			if (state.mode === "input") {
+				suppressAutoInputForSelection = true;
+				return saveCustomAnswer(state, text);
+			}
+			return saveNote(state, text);
+		}
+
+		function saveEditorAndMoveTab(delta: number): AskState {
+			const nextState = saveEditorWithoutAdvancing();
+			suppressAutoInputForSelection = false;
+			return moveTab(nextState, delta);
 		}
 
 		function render(width: number): string[] {
@@ -305,8 +354,9 @@ function renderSubmit(
 	);
 	lines.push("");
 
+	const submittedAnswers = toAskResult(state).answers;
 	for (const question of state.questions) {
-		const answer = getAnswer(state, question.id);
+		const answer = submittedAnswers[question.id];
 		pushWrappedText(
 			lines,
 			question.prompt,
@@ -323,15 +373,45 @@ function renderSubmit(
 			continue;
 		}
 		const answerText = answer.customText ?? answer.labels.join(", ");
-		pushWrappedText(
-			lines,
-			`→ ${answerText}`,
-			width,
-			theme,
-			answer.customText ? "text" : "success",
-			"   ",
-			"     ",
-		);
+		if (answerText) {
+			pushWrappedText(
+				lines,
+				`→ ${answerText}`,
+				width,
+				theme,
+				answer.customText ? "text" : "success",
+				"   ",
+				"     ",
+			);
+		}
+		if (answer.note) {
+			pushWrappedText(
+				lines,
+				`Question note: ${answer.note}`,
+				width,
+				theme,
+				"muted",
+				"   ",
+				"     ",
+			);
+		}
+		for (let index = 0; index < answer.values.length; index++) {
+			const value = answer.values[index];
+			const label = answer.labels[index] ?? value;
+			const note = answer.optionNotes?.[value];
+			if (!note) {
+				continue;
+			}
+			pushWrappedText(
+				lines,
+				`${label} note: ${note}`,
+				width,
+				theme,
+				"muted",
+				"   ",
+				"     ",
+			);
+		}
 	}
 
 	lines.push("");
@@ -376,6 +456,15 @@ function renderQuestionContent(args: {
 		args;
 
 	renderQuestionPrompt(lines, question.prompt, theme, width);
+	renderQuestionNote(
+		lines,
+		state,
+		question.id,
+		theme,
+		width,
+		editor,
+		newLineHint,
+	);
 
 	if (question.type === "preview") {
 		renderPreviewQuestion(
@@ -413,6 +502,55 @@ function renderQuestionPrompt(
 	lines.push("");
 }
 
+function renderQuestionNote(
+	lines: string[],
+	state: AskState,
+	questionId: string,
+	theme: ExtensionContext["ui"]["theme"],
+	width: number,
+	editor: Editor,
+	newLineHint: string,
+) {
+	const existingNote = getQuestionNote(state, questionId);
+	if (
+		state.mode === "note" &&
+		state.noteQuestionId === questionId &&
+		!state.noteOptionValue
+	) {
+		pushWrappedText(lines, "Question note", width, theme, "accent", " ", " ");
+		for (const editorLine of editor.render(Math.max(8, width - 5))) {
+			lines.push(
+				truncateToWidth(
+					`   ${renderInputLine(editorLine, width - 3, theme)}`,
+					width,
+				),
+			);
+		}
+		lines.push(
+			truncateToWidth(
+				`   ${theme.fg("dim", `${newLineHint} newline · Enter save · Esc save and close`)}`,
+				width,
+			),
+		);
+		lines.push("");
+		return;
+	}
+
+	if (!existingNote) {
+		return;
+	}
+	pushWrappedText(
+		lines,
+		`Question note: ${existingNote}`,
+		width,
+		theme,
+		"muted",
+		" ",
+		"   ",
+	);
+	lines.push("");
+}
+
 function renderStandardQuestion(
 	lines: string[],
 	state: AskState,
@@ -428,6 +566,9 @@ function renderStandardQuestion(
 	for (let i = 0; i < options.length; i++) {
 		const option = options[i];
 		const selected = i === state.optionIndex;
+		const optionNote = option.isOther
+			? undefined
+			: answer?.optionNotes?.[option.value];
 		const isAnsweredOption = option.isOther
 			? !!answer?.customText
 			: !!answer?.values.includes(option.value);
@@ -459,7 +600,27 @@ function renderStandardQuestion(
 				"     ",
 			);
 		}
-		if (option.isOther && selected && state.mode === "input") {
+		if (
+			!option.isOther &&
+			state.mode === "note" &&
+			state.noteQuestionId === question.id &&
+			state.noteOptionValue === option.value
+		) {
+			for (const editorLine of editor.render(Math.max(8, width - 7))) {
+				lines.push(
+					truncateToWidth(
+						`     ${renderInputLine(editorLine, width - 5, theme)}`,
+						width,
+					),
+				);
+			}
+			lines.push(
+				truncateToWidth(
+					`     ${theme.fg("dim", `${newLineHint} newline · Enter save · Esc save and close`)}`,
+					width,
+				),
+			);
+		} else if (option.isOther && selected && state.mode === "input") {
 			for (const editorLine of editor.render(Math.max(8, width - 7))) {
 				lines.push(
 					truncateToWidth(
@@ -488,6 +649,20 @@ function renderStandardQuestion(
 					"     ",
 				);
 			}
+		}
+		if (
+			optionNote &&
+			!(state.mode === "note" && state.noteOptionValue === option.value)
+		) {
+			pushWrappedText(
+				lines,
+				`Note: ${optionNote}`,
+				width,
+				theme,
+				"muted",
+				"     ",
+				"     ",
+			);
 		}
 	}
 }
@@ -527,6 +702,33 @@ function renderPreviewQuestion(
 		);
 		add("");
 		renderPreviewPane(selectedOption, theme, width).forEach(add);
+	}
+
+	if (
+		selectedOption &&
+		!selectedOption.isOther &&
+		state.mode === "note" &&
+		state.noteQuestionId === question.id &&
+		state.noteOptionValue === selectedOption.value
+	) {
+		add("");
+		for (const editorLine of editor.render(Math.max(8, width - 7))) {
+			add(`     ${renderInputLine(editorLine, width - 5, theme)}`);
+		}
+		add(
+			`     ${theme.fg("dim", `${newLineHint} newline · Enter save · Esc save and close`)}`,
+		);
+	} else if (selectedOption && !selectedOption.isOther) {
+		const optionNote = answer?.optionNotes?.[selectedOption.value];
+		if (optionNote) {
+			add("");
+			for (const line of wrapText(
+				`Note: ${optionNote}`,
+				Math.max(1, width - 5),
+			)) {
+				add(` ${theme.fg("muted", line)}`);
+			}
+		}
 	}
 
 	if (selectedOption?.isOther && state.mode === "input") {
@@ -729,7 +931,16 @@ function renderFooter(
 	theme: ExtensionContext["ui"]["theme"],
 ): string {
 	if (state.mode === "input") {
-		return "";
+		return theme.fg(
+			"dim",
+			" Enter submit · Esc save and close · Tab/←→ save and navigate",
+		);
+	}
+	if (state.mode === "note") {
+		return theme.fg(
+			"dim",
+			" Enter save · Esc save and close · Tab/←→ save and navigate",
+		);
 	}
 
 	const question = getCurrentQuestion(state);
@@ -739,10 +950,13 @@ function renderFooter(
 	if (question?.type === "multi") {
 		return theme.fg(
 			"dim",
-			" ⇆ tab · ↑↓ select · space toggle · enter continue · esc dismiss · 1-9 quick toggle",
+			" ⇆ tab · ↑↓ select · Space toggle · Enter continue · N option note · Ctrl+N question note · Esc dismiss · 1-9 quick toggle",
 		);
 	}
-	return theme.fg("dim", " ⇆ tab · ↑↓ select · enter confirm · esc dismiss");
+	return theme.fg(
+		"dim",
+		" ⇆ tab · ↑↓ select · Enter confirm · N option note · Ctrl+N question note · Esc dismiss",
+	);
 }
 
 function parseDigit(data: string): number | null {
@@ -770,4 +984,12 @@ function formatKeybindingLabel(key: string): string {
 			return part.charAt(0).toUpperCase() + part.slice(1);
 		})
 		.join("+");
+}
+
+function isOptionNoteShortcut(data: string): boolean {
+	return data === "n" || data === "N";
+}
+
+function isQuestionNoteShortcut(data: string): boolean {
+	return matchesKey(data, Key.ctrl("n"));
 }

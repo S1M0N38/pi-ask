@@ -5,11 +5,15 @@ import {
 	cancelFlow,
 	confirmCurrentSelection,
 	createInitialState,
+	enterOptionNoteMode,
+	enterQuestionNoteMode,
 	saveCustomAnswer,
+	saveNote,
 	getRenderableOptions,
 	moveOption,
 	moveTab,
 	submitCustomAnswer,
+	toAskResult,
 	toggleCurrentMultiOption,
 } from "../src/state.ts";
 import type { AskParams } from "../src/types.ts";
@@ -158,7 +162,7 @@ test("escape saves typed custom answer without advancing", () => {
 	assert.equal(state.answers.q1.customText, "my draft answer");
 });
 
-test("empty custom draft clears the stored answer", () => {
+test("empty custom draft clears the stored answer but preserves notes", () => {
 	let state = createInitialState({
 		questions: [
 			{
@@ -169,13 +173,137 @@ test("empty custom draft clears the stored answer", () => {
 		],
 	});
 
+	state = enterQuestionNoteMode(state, "q1");
+	state = saveNote(state, "question note");
 	state = applyNumberShortcut(state, 2);
 	state = saveCustomAnswer(state, "my answer");
 	state = applyNumberShortcut(state, 2);
 	state = saveCustomAnswer(state, "   ");
 
-	assert.equal(state.answers.q1, undefined);
+	assert.equal(state.answers.q1.customText, undefined);
+	assert.equal(state.answers.q1.note, "question note");
 	assert.equal(state.mode, "navigate");
+});
+
+test("question note can be saved without selecting an answer and is submitted", () => {
+	let state = createInitialState({
+		questions: [
+			{ id: "q1", prompt: "Question?", options: [{ value: "a", label: "A" }] },
+		],
+	});
+
+	state = enterQuestionNoteMode(state, "q1");
+	assert.equal(state.mode, "note");
+	state = saveNote(state, "needs examples");
+
+	assert.equal(state.mode, "navigate");
+	assert.equal(state.answers.q1.note, "needs examples");
+	assert.deepEqual(toAskResult(state).answers.q1, {
+		values: [],
+		labels: [],
+		indices: [],
+		customText: undefined,
+		note: "needs examples",
+		optionNotes: undefined,
+	});
+});
+
+test("option notes can exist before selection but only selected option notes are submitted", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+		],
+	});
+
+	state = enterOptionNoteMode(state, "q1", "vue");
+	state = saveNote(state, "maybe later");
+	assert.equal(state.answers.q1.optionNotes?.vue, "maybe later");
+	assert.equal(toAskResult(state).answers.q1, undefined);
+
+	state = toggleCurrentMultiOption(state);
+	assert.deepEqual(state.answers.q1.values, ["react"]);
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+	assert.deepEqual(state.answers.q1.values, ["react", "vue"]);
+	assert.deepEqual(toAskResult(state).answers.q1.optionNotes, {
+		vue: "maybe later",
+	});
+});
+
+test("deselecting an option keeps its note in state but omits it from submission", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+		],
+	});
+
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+	state = enterOptionNoteMode(state, "q1", "vue");
+	state = saveNote(state, "migration risk");
+	state = toggleCurrentMultiOption(state);
+
+	assert.equal(state.answers.q1.optionNotes?.vue, "migration risk");
+	assert.equal(toAskResult(state).answers.q1, undefined);
+
+	state = toggleCurrentMultiOption(state);
+	assert.deepEqual(toAskResult(state).answers.q1, {
+		values: ["vue"],
+		labels: ["Vue"],
+		indices: [2],
+		customText: undefined,
+		note: undefined,
+		optionNotes: {
+			vue: "migration risk",
+		},
+	});
+});
+
+test("preview questions can store selected option notes for submission", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "preview",
+				prompt: "Pick layout",
+				type: "preview",
+				options: [
+					{ value: "compact", label: "Compact", preview: "A" },
+					{ value: "spacious", label: "Spacious", preview: "B" },
+				],
+			},
+		],
+	});
+
+	state = enterOptionNoteMode(state, "preview", "spacious");
+	state = saveNote(state, "better scanability");
+	state = applyNumberShortcut(state, 2);
+
+	assert.deepEqual(toAskResult(state).answers.preview, {
+		values: ["spacious"],
+		labels: ["Spacious"],
+		indices: [2],
+		customText: undefined,
+		note: undefined,
+		optionNotes: {
+			spacious: "better scanability",
+		},
+	});
 });
 
 test("tab navigation wraps including submit tab", () => {
@@ -205,7 +333,7 @@ test("tab navigation works with a single question", () => {
 	assert.equal(state.mode, "navigate");
 });
 
-test("escape cancels from main flow but only exits input mode when typing", () => {
+test("escape cancels from main flow but only exits input and note modes when editing", () => {
 	let state = createInitialState(sampleParams());
 	state = cancelFlow(state);
 	assert.equal(state.cancelled, true);
@@ -218,6 +346,12 @@ test("escape cancels from main flow but only exits input mode when typing", () =
 	});
 	state = applyNumberShortcut(state, 2);
 	assert.equal(state.mode, "input");
+	state = cancelFlow(state);
+	assert.equal(state.mode, "navigate");
+	assert.equal(state.cancelled, false);
+
+	state = enterQuestionNoteMode(state, "q");
+	assert.equal(state.mode, "note");
 	state = cancelFlow(state);
 	assert.equal(state.mode, "navigate");
 	assert.equal(state.cancelled, false);

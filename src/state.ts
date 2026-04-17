@@ -37,6 +37,8 @@ export function createInitialState(params: AskParams): AskState {
 		submitIndex: 0,
 		mode: "navigate",
 		inputQuestionId: null,
+		noteQuestionId: null,
+		noteOptionValue: null,
 		answers: {},
 		completed: false,
 		cancelled: false,
@@ -73,6 +75,21 @@ export function getAnswer(
 	return state.answers[questionId];
 }
 
+export function getQuestionNote(
+	state: AskState,
+	questionId: string,
+): string | undefined {
+	return state.answers[questionId]?.note;
+}
+
+export function getOptionNote(
+	state: AskState,
+	questionId: string,
+	optionValue: string,
+): string | undefined {
+	return state.answers[questionId]?.optionNotes?.[optionValue];
+}
+
 export function isQuestionAnswered(
 	state: AskState,
 	questionId: string,
@@ -91,6 +108,8 @@ export function moveTab(state: AskState, delta: number): AskState {
 		submitIndex: 0,
 		mode: isSubmitTab({ ...state, currentTab }) ? "submit" : "navigate",
 		inputQuestionId: null,
+		noteQuestionId: null,
+		noteOptionValue: null,
 	};
 }
 
@@ -118,6 +137,8 @@ export function enterInputMode(state: AskState, questionId: string): AskState {
 		...state,
 		mode: "input",
 		inputQuestionId: questionId,
+		noteQuestionId: null,
+		noteOptionValue: null,
 	};
 }
 
@@ -126,6 +147,42 @@ export function exitInputMode(state: AskState): AskState {
 		...state,
 		mode: isSubmitTab(state) ? "submit" : "navigate",
 		inputQuestionId: null,
+	};
+}
+
+export function enterQuestionNoteMode(
+	state: AskState,
+	questionId: string,
+): AskState {
+	return {
+		...state,
+		mode: "note",
+		inputQuestionId: null,
+		noteQuestionId: questionId,
+		noteOptionValue: null,
+	};
+}
+
+export function enterOptionNoteMode(
+	state: AskState,
+	questionId: string,
+	optionValue: string,
+): AskState {
+	return {
+		...state,
+		mode: "note",
+		inputQuestionId: null,
+		noteQuestionId: questionId,
+		noteOptionValue: optionValue,
+	};
+}
+
+export function exitNoteMode(state: AskState): AskState {
+	return {
+		...state,
+		mode: isSubmitTab(state) ? "submit" : "navigate",
+		noteQuestionId: null,
+		noteOptionValue: null,
 	};
 }
 
@@ -203,28 +260,33 @@ export function saveCustomAnswer(state: AskState, rawValue: string): AskState {
 	);
 	if (!question) return exitInputMode(state);
 
-	const trimmed = rawValue.trim();
 	const nextState = exitInputMode(state);
+	const trimmed = rawValue.trim();
+	const existing = nextState.answers[question.id];
 	if (!trimmed) {
-		const answers = { ...nextState.answers };
-		delete answers[question.id];
 		return {
 			...nextState,
-			answers,
+			answers: updateAnswer(nextState.answers, question.id, (answer) => {
+				delete answer.customText;
+				answer.values = [];
+				answer.labels = [];
+				answer.indices = [];
+			}),
 		};
 	}
 
-	const answer: AskAnswer = {
-		values: [rawValue],
-		labels: [rawValue],
-		indices: [],
-		customText: rawValue,
-	};
 	return {
 		...nextState,
 		answers: {
 			...nextState.answers,
-			[question.id]: answer,
+			[question.id]: {
+				...emptyAnswer(),
+				...existing,
+				values: [rawValue],
+				labels: [rawValue],
+				indices: [],
+				customText: rawValue,
+			},
 		},
 	};
 }
@@ -235,15 +297,51 @@ export function submitCustomAnswer(
 ): AskState {
 	const questionId = state.inputQuestionId;
 	const nextState = saveCustomAnswer(state, rawValue);
-	if (!questionId || !getAnswer(nextState, questionId)) {
+	if (!questionId || !isQuestionAnswered(nextState, questionId)) {
 		return nextState;
 	}
 	return advanceToNextTab(nextState);
 }
 
+export function saveNote(state: AskState, rawValue: string): AskState {
+	const questionId = state.noteQuestionId;
+	if (!questionId) {
+		return exitNoteMode(state);
+	}
+
+	const optionValue = state.noteOptionValue;
+	const trimmed = rawValue.trim();
+	const nextState = exitNoteMode(state);
+	return {
+		...nextState,
+		answers: updateAnswer(nextState.answers, questionId, (answer) => {
+			if (optionValue) {
+				const optionNotes = { ...(answer.optionNotes ?? {}) };
+				if (trimmed) {
+					optionNotes[optionValue] = rawValue;
+				} else {
+					delete optionNotes[optionValue];
+				}
+				answer.optionNotes =
+					Object.keys(optionNotes).length > 0 ? optionNotes : undefined;
+				return;
+			}
+
+			if (trimmed) {
+				answer.note = rawValue;
+			} else {
+				delete answer.note;
+			}
+		}),
+	};
+}
+
 export function cancelFlow(state: AskState): AskState {
 	if (state.mode === "input") {
 		return exitInputMode(state);
+	}
+	if (state.mode === "note") {
+		return exitNoteMode(state);
 	}
 	return {
 		...state,
@@ -262,7 +360,7 @@ export function toAskResult(state: AskState): AskResult {
 			prompt: question.prompt,
 			type: question.type,
 		})),
-		answers: state.answers,
+		answers: filterAnswersForSubmission(state.answers),
 	};
 }
 
@@ -274,10 +372,24 @@ export function summarizeResult(result: AskResult): string {
 	const lines = result.questions.flatMap((question) => {
 		const answer = result.answers[question.id];
 		if (!answer) return [];
+
+		const questionLines: string[] = [];
 		if (answer.customText) {
-			return [`${question.label}: ${answer.customText}`];
+			questionLines.push(`${question.label}: ${answer.customText}`);
+		} else if (answer.labels.length > 0) {
+			questionLines.push(`${question.label}: ${answer.labels.join(", ")}`);
 		}
-		return [`${question.label}: ${answer.labels.join(", ")}`];
+		if (answer.note) {
+			questionLines.push(`${question.label} note: ${answer.note}`);
+		}
+		for (const label of answer.labels) {
+			const optionValue = answer.values[answer.labels.indexOf(label)];
+			const note = optionValue ? answer.optionNotes?.[optionValue] : undefined;
+			if (note) {
+				questionLines.push(`${question.label} / ${label} note: ${note}`);
+			}
+		}
+		return questionLines;
 	});
 
 	return lines.join("\n") || "User submitted the ask flow";
@@ -291,6 +403,7 @@ function toggleAnswer(
 ): AskState {
 	const existing = state.answers[questionId] ?? emptyAnswer();
 	const next = cloneAnswer(existing);
+	delete next.customText;
 	const foundIndex = next.values.indexOf(option.value);
 
 	if (foundIndex >= 0) {
@@ -318,14 +431,18 @@ function setSingleAnswer(
 	option: RenderOption,
 	index: number,
 ): AskState {
+	const existing = state.answers[questionId] ?? emptyAnswer();
 	return {
 		...state,
 		answers: {
 			...state.answers,
 			[questionId]: {
+				...emptyAnswer(),
+				...existing,
 				values: [option.value],
 				labels: [option.label],
 				indices: [index + 1],
+				customText: undefined,
 			},
 		},
 	};
@@ -341,6 +458,8 @@ function advanceToNextTab(state: AskState): AskState {
 			optionIndex: 0,
 			submitIndex: 0,
 			inputQuestionId: null,
+			noteQuestionId: null,
+			noteOptionValue: null,
 		};
 	}
 
@@ -352,6 +471,8 @@ function advanceToNextTab(state: AskState): AskState {
 		optionIndex: 0,
 		submitIndex: 0,
 		inputQuestionId: null,
+		noteQuestionId: null,
+		noteOptionValue: null,
 	};
 }
 
@@ -366,9 +487,61 @@ function cloneAnswer(answer: AskAnswer): AskAnswer {
 		indices: [...answer.indices],
 		customText: answer.customText,
 		note: answer.note,
+		optionNotes: answer.optionNotes ? { ...answer.optionNotes } : undefined,
 	};
 }
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
+}
+
+function updateAnswer(
+	answers: Record<string, AskAnswer>,
+	questionId: string,
+	mutate: (answer: AskAnswer) => void,
+): Record<string, AskAnswer> {
+	const nextAnswer = cloneAnswer(answers[questionId] ?? emptyAnswer());
+	mutate(nextAnswer);
+	if (isEmptyAnswer(nextAnswer)) {
+		const nextAnswers = { ...answers };
+		delete nextAnswers[questionId];
+		return nextAnswers;
+	}
+	return {
+		...answers,
+		[questionId]: nextAnswer,
+	};
+}
+
+function isEmptyAnswer(answer: AskAnswer): boolean {
+	return (
+		answer.values.length === 0 &&
+		answer.labels.length === 0 &&
+		answer.indices.length === 0 &&
+		!answer.customText &&
+		!answer.note &&
+		(!answer.optionNotes || Object.keys(answer.optionNotes).length === 0)
+	);
+}
+
+function filterAnswersForSubmission(
+	answers: Record<string, AskAnswer>,
+): Record<string, AskAnswer> {
+	const result: Record<string, AskAnswer> = {};
+	for (const [questionId, answer] of Object.entries(answers)) {
+		const next = cloneAnswer(answer);
+		if (next.optionNotes) {
+			const selectedNotes = Object.fromEntries(
+				next.values
+					.map((value) => [value, next.optionNotes?.[value]])
+					.filter((entry): entry is [string, string] => !!entry[1]),
+			);
+			next.optionNotes =
+				Object.keys(selectedNotes).length > 0 ? selectedNotes : undefined;
+		}
+		if (!isEmptyAnswer(next)) {
+			result[questionId] = next;
+		}
+	}
+	return result;
 }
