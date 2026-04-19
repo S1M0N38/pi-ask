@@ -4,11 +4,6 @@ Thanks for contributing to `@eko24ive/pi-ask`.
 
 ## Development setup
 
-Requirements:
-
-- Node.js `22+`
-- pnpm `10+`
-
 Install dependencies:
 
 ```bash

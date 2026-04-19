@@ -154,13 +154,6 @@ Behavior:
 
 ## Local development
 
-### Requirements
-
-- Node.js `22+`
-- pnpm `10+`
-
-The repo includes `.nvmrc` and `.node-version` set to Node.js `22`.
-
 ### Run locally in pi
 
 ```bash
