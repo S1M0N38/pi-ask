@@ -156,10 +156,10 @@ Behavior:
 
 ### Requirements
 
-- Node.js `22.19.0`
-- pnpm `10.33.0`
+- Node.js `22+`
+- pnpm `10+`
 
-The repo also includes `.nvmrc` and `.node-version` pinned to the same Node.js version.
+The repo includes `.nvmrc` and `.node-version` set to Node.js `22`.
 
 ### Run locally in pi
 

@@ -6,8 +6,8 @@ Thanks for contributing to `@eko24ive/pi-ask`.
 
 Requirements:
 
-- Node.js `22.19.0`
-- pnpm `10.33.0`
+- Node.js `22+`
+- pnpm `10+`
 
 Install dependencies:
 
