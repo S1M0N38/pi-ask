@@ -12,17 +12,17 @@ export const UI_DIMENSIONS = {
 } as const;
 
 export const UI_TEXT = {
-	questionNoteTitle: "Question note",
-	reviewTitle: "Review your answers",
-	readyToSubmit: "Ready to submit your answers?",
-	unanswered: "→ (unanswered)",
-	footerInput: " Enter submit · Esc save and close",
-	footerNote: " Enter save · Esc save and close",
+	questionNoteTitle: "Note",
+	reviewTitle: "Review answers",
+	readyToSubmit: "Submit answers?",
+	unanswered: "→ unanswered",
+	footerInput: " Enter submit · Esc close",
+	footerNote: " Enter save · Esc close",
 	footerSubmit: " ↑↓ select · Enter confirm · Esc cancel",
 	footerMulti:
-		" ⇆ tab · ↑↓ select · Space toggle · Enter continue · N option note · Ctrl+N question note · Esc dismiss · 1-9 quick toggle",
+		" ⇆ tab · ↑↓ select · Space toggle · Enter continue · N/Shift+N note · Esc dismiss",
 	footerDefault:
-		" ⇆ tab · ↑↓ select · Enter confirm · N option note · Ctrl+N question note · Esc dismiss",
-	editorPlaceholderInput: "Type your answer...",
-	editorPlaceholderNote: "Add a note...",
+		" ⇆ tab · ↑↓ select · Enter confirm · N/Shift+N note · Esc dismiss",
+	editorPlaceholderInput: "Type answer...",
+	editorPlaceholderNote: "Add note...",
 } as const;

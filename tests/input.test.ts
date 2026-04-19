@@ -103,3 +103,22 @@ test("ctrl+c dismisses the flow from both navigation and editing modes", () => {
 		kind: "dismiss",
 	});
 });
+
+test("note shortcuts use n for option notes and Shift+N for question notes", () => {
+	const navigation = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Question?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+
+	assert.deepEqual(getInputCommand(navigation, "n"), {
+		kind: "openOptionNote",
+	});
+	assert.deepEqual(getInputCommand(navigation, "N"), {
+		kind: "openQuestionNote",
+	});
+});

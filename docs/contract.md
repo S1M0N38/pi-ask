@@ -80,8 +80,8 @@ This document defines the stable external behavior. It does not explain internal
 - single-select, multi-select, and preview questions
 - inline free-form answers for non-preview questions
 - pi-style `@` file path autocomplete inside free-form answer and note editors
-- question notes via `Ctrl+N`
-- option notes via `N`
+- question notes via `Shift+N`
+- option notes via `n`
 - number-key quick selection
 - submit/cancel review tab
 - transcript-friendly call and result rendering
@@ -97,8 +97,8 @@ Main flow:
 - `Ctrl+C`: dismiss the entire flow immediately, even while editing a note or free-form answer
 - `1..9`: select or toggle the matching option
 - `Space`: toggle the active option
-- `N`: edit the active option note
-- `Ctrl+N`: edit the current question note
+- `n`: edit the active option note
+- `Shift+N`: edit the current question note
 
 Editing flow:
 

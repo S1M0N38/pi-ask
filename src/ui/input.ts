@@ -89,11 +89,11 @@ function getNavigationInputCommand(data: string): AskInputCommand {
 }
 
 function isOptionNoteShortcut(data: string): boolean {
-	return data === "n" || data === "N";
+	return data === "n";
 }
 
 function isQuestionNoteShortcut(data: string): boolean {
-	return matchesKey(data, Key.ctrl("n"));
+	return data === "N";
 }
 
 function parseDigit(data: string): number | null {

@@ -80,7 +80,7 @@ test("selected custom option keeps its label and renders editor below", () => {
 	});
 
 	assert(lines.some((line) => line.includes("Type your own")));
-	assert(lines.some((line) => line.includes("Type your answer...")));
+	assert(lines.some((line) => line.includes("Type answer...")));
 });
 
 test("selected multiline custom option renders full editor block", () => {
