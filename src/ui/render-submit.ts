@@ -64,14 +64,14 @@ function renderSubmittedAnswer(
 	theme: Theme,
 	width: number
 ) {
-	const answerText = answer.customText ?? answer.labels.join(", ");
+	const answerText = answer.labels.join(", ");
 	if (answerText) {
 		pushWrappedText(
 			lines,
 			`→ ${answerText}`,
 			width,
 			theme,
-			answer.customText ? "text" : "success",
+			isCustomOnlyAnswer(answer) ? "text" : "success",
 			"   ",
 			"     "
 		);
@@ -104,6 +104,10 @@ function renderSubmittedAnswer(
 			"     "
 		);
 	}
+}
+
+function isCustomOnlyAnswer(answer: AskResult["answers"][string]): boolean {
+	return answer.indices.length === 0 && !!answer.customText;
 }
 
 function renderSubmitActions(

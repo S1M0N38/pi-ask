@@ -68,6 +68,8 @@ This document defines the stable external behavior. It does not explain internal
 - single-select answers still use arrays
 - `indices` are 1-based rendered option positions
 - `customText` stores the free-form answer
+- on multi-select questions, `values` and `labels` include both selected options and `customText` when both are present
+- saving or clearing free-form text on a multi-select question does not clear other selected options
 - `note` stores a question-level note
 - `optionNotes` includes only notes for selected options
 - question notes may exist without a selected answer

@@ -56,6 +56,39 @@ test("summaries include custom text answers", () => {
 	);
 });
 
+test("multi-select summaries include selected options and custom text", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "frameworks",
+				label: "Frameworks",
+				prompt: "Which frameworks?",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 1);
+	state = applyNumberShortcut(state, 3);
+	state = submitCustomAnswer(state, "SolidStart");
+	const result = toAskResult(state);
+
+	assert.deepEqual(result.answers.frameworks, {
+		values: ["react", "SolidStart"],
+		labels: ["React", "SolidStart"],
+		indices: [1],
+		customText: "SolidStart",
+		note: undefined,
+		optionNotes: undefined,
+	});
+	assert.equal(summarizeResult(result), "Frameworks: React, SolidStart");
+	assert.equal(renderResultText(result), "✓ Frameworks: React, SolidStart");
+});
+
 test("summaries and result text include question and selected option notes", () => {
 	let state = createInitialState({
 		questions: [

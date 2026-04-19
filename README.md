@@ -119,6 +119,7 @@ After answers are returned, continue the task using those answers explicitly.
 - multi-select questions
 - preview questions with a dedicated preview pane
 - free-form answers via an inline `Type your own` option that turns into an embedded editor when selected
+- on multi-select questions, free-form answers are additive and do not clear other selected options
 - per-question notes via `Ctrl+N`
 - per-option notes via `N`
 - full inline rendering of saved notes
@@ -148,6 +149,8 @@ Behavior:
 - only notes for currently selected options are included in the submitted result
 - deselecting an option keeps its note in UI state, so re-selecting it restores the note
 - empty note text clears the note
+- on multi-select questions, saving a free-form answer keeps other selected options intact
+- on multi-select questions, submitted `values` and `labels` include both selected options and the free-form answer when both exist
 - when the free-form option is selected, it becomes an inline input row with the selected-tab background style spanning the full width
 - while editing a note or free-form answer, `Up` / `Down` save the draft and move navigation instead of being trapped by the editor
 - `Space` toggles the active option on single-select questions too, but does not auto-advance

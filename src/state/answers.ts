@@ -35,7 +35,6 @@ export function toggleSelection(
 	index: number
 ): AskStateAnswer {
 	const next = cloneAnswer(answer);
-	next.customText = undefined;
 	const selectedIndex = next.selected.findIndex(
 		(selection) => selection.value === option.value
 	);
@@ -74,11 +73,14 @@ export function setSingleSelection(
 
 export function saveCustomText(
 	answer: AskStateAnswer,
-	rawValue: string
+	rawValue: string,
+	mode: "single" | "multi"
 ): AskStateAnswer {
 	const trimmed = rawValue.trim();
 	const next = cloneAnswer(answer);
-	next.selected = [];
+	if (mode === "single") {
+		next.selected = [];
+	}
 	if (!trimmed) {
 		next.customText = undefined;
 		return next;
@@ -143,12 +145,14 @@ export function isOptionSelected(
 }
 
 export function serializeAnswer(answer: AskStateAnswer): AskResultAnswer {
-	const values = answer.customText
-		? [answer.customText]
-		: answer.selected.map((selection) => selection.value);
-	const labels = answer.customText
-		? [answer.customText]
-		: answer.selected.map((selection) => selection.label);
+	const values = [
+		...answer.selected.map((selection) => selection.value),
+		...(answer.customText ? [answer.customText] : []),
+	];
+	const labels = [
+		...answer.selected.map((selection) => selection.label),
+		...(answer.customText ? [answer.customText] : []),
+	];
 	const indices = answer.selected.map((selection) => selection.index);
 	const selectedNotes = answer.optionNotes
 		? Object.fromEntries(

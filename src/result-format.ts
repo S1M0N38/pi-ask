@@ -37,17 +37,21 @@ function formatAnswerLine(
 	answer: AskResult["answers"][string],
 	mode: "summary" | "render"
 ): string | undefined {
-	const answerText = answer.customText ?? answer.labels.join(", ");
+	const answerText = answer.labels.join(", ");
 	if (!answerText) {
 		return;
 	}
 	if (mode === "summary") {
 		return `${questionLabel}: ${answerText}`;
 	}
-	if (answer.customText) {
+	if (isCustomOnlyAnswer(answer)) {
 		return `✓ ${questionLabel}: (wrote) ${answerText}`;
 	}
 	return `✓ ${questionLabel}: ${answerText}`;
+}
+
+function isCustomOnlyAnswer(answer: AskResult["answers"][string]): boolean {
+	return answer.indices.length === 0 && !!answer.customText;
 }
 
 function formatQuestionNoteLine(

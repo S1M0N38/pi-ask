@@ -258,7 +258,12 @@ function saveInputValue(
 	const nextState = updateAnswer(
 		exitEditingView(state),
 		question.id,
-		(answer) => saveCustomText(answer, rawValue)
+		(answer) =>
+			saveCustomText(
+				answer,
+				rawValue,
+				question.type === "multi" ? "multi" : "single"
+			)
 	);
 	if (!(submit && isAnswerAnswered(nextState.answers[question.id]))) {
 		return nextState;

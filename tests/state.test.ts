@@ -185,6 +185,68 @@ test("escape saves typed custom answer without advancing", () => {
 	assert.equal(state.answers.q1.customText, "my draft answer");
 });
 
+test("multi-select keeps existing selections when leaving custom input empty", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+					{ value: "svelte", label: "Svelte" },
+				],
+			},
+		],
+	});
+
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+	state = applyNumberShortcut(state, 4);
+	state = saveCustomAnswer(state, "   ");
+
+	assert.deepEqual(
+		state.answers.q1.selected.map((selection) => selection.value),
+		["vue", "svelte"]
+	);
+	assert.equal(state.answers.q1.customText, undefined);
+});
+
+test("multi-select keeps existing selections when saving custom text", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+			{
+				id: "q2",
+				prompt: "Anything else?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+
+	state = toggleCurrentMultiOption(state);
+	state = applyNumberShortcut(state, 3);
+	state = submitCustomAnswer(state, "SolidStart");
+
+	assert.equal(state.activeTabIndex, 1);
+	assert.deepEqual(
+		state.answers.q1.selected.map((selection) => selection.value),
+		["react"]
+	);
+	assert.equal(state.answers.q1.customText, "SolidStart");
+});
+
 test("empty custom draft clears the stored answer but preserves notes", () => {
 	let state = createInitialState({
 		questions: [
@@ -302,6 +364,32 @@ test("deselecting an option keeps its note in state but omits it from submission
 			vue: "migration risk",
 		},
 	});
+});
+
+test("multi-select keeps custom text when toggling additional options", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 3);
+	state = saveCustomAnswer(state, "SolidStart");
+	state = applyNumberShortcut(state, 1);
+
+	assert.equal(state.answers.q1.customText, "SolidStart");
+	assert.deepEqual(
+		state.answers.q1.selected.map((selection) => selection.value),
+		["react"]
+	);
 });
 
 test("preview questions can store selected option notes for submission", () => {
