@@ -1,21 +1,31 @@
 {
-  "dependencies": {
-    "@mariozechner/pi-coding-agent": "0.67.3",
-    "@mariozechner/pi-tui": "0.67.3",
-    "@sinclair/typebox": "0.34.49"
+  "name": "@eko24ive/pi-ask",
+  "version": "0.0.0-development",
+  "description": "Pi package that adds an interactive ask_user clarification tool.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eko24ive/pi-ask.git"
   },
-  "devDependencies": {
-    "@biomejs/biome": "2.4.12",
-    "@commitlint/cli": "^19.8.1",
-    "@commitlint/config-conventional": "^19.8.1",
-    "@types/node": "25.6.0",
-    "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "^3.3.0",
-    "lefthook": "^2.1.6",
-    "typescript": "6.0.2",
-    "ultracite": "7.6.0"
+  "homepage": "https://github.com/eko24ive/pi-ask#readme",
+  "bugs": {
+    "url": "https://github.com/eko24ive/pi-ask/issues"
   },
-  "name": "pi-ask",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "pi-coding-agent",
+    "ask_user",
+    "clarification",
+    "terminal-ui"
+  ],
+  "files": [
+    "src/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "test": "node --test tests/*.test.ts",
     "typecheck": "tsc -p tsconfig.json",
@@ -26,10 +36,71 @@
     "fix": "ultracite fix",
     "prepare": "lefthook install",
     "commit": "cz",
-    "commitlint": "commitlint"
+    "commitlint": "commitlint",
+    "release": "semantic-release"
   },
-  "type": "module",
-  "private": true,
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "release": {
+    "branches": [
+      "main"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md"
+        }
+      ],
+      "@semantic-release/npm",
+      "@semantic-release/github",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "package.json",
+            "CHANGELOG.md"
+          ],
+          "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+        }
+      ]
+    ]
+  },
+  "peerDependencies": {
+    "@mariozechner/pi-coding-agent": "*",
+    "@mariozechner/pi-tui": "*",
+    "@sinclair/typebox": "*"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.12",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@mariozechner/pi-coding-agent": "0.67.3",
+    "@mariozechner/pi-tui": "0.67.3",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "@sinclair/typebox": "0.34.49",
+    "@types/node": "25.6.0",
+    "commitizen": "^4.3.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "lefthook": "^2.1.6",
+    "semantic-release": "^24.2.9",
+    "typescript": "6.0.2",
+    "ultracite": "7.6.0"
+  },
   "engines": {
     "node": "22.19.x",
     "pnpm": "10.33.0"
