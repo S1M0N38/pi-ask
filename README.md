@@ -1,8 +1,12 @@
 # @eko24ive/pi-ask
 
-`@eko24ive/pi-ask` is a **pi package** that adds an interactive `ask_user` clarification tool.
+`@eko24ive/pi-ask` adds an interactive `ask_user` clarification tool.
 
 It lets an agent pause, ask structured questions in a terminal UI, and continue with normalized answers instead of guessing.
+
+<video src="docs/media/ask-user-demo.mp4" controls muted playsinline width="900">
+  Your browser does not support embedded video playback.
+</video>
 
 ## Install
 
@@ -16,18 +20,39 @@ You can also install from git:
 pi install git:github.com/eko24ive/pi-ask
 ```
 
+### Screenshots
+
+| | |
+| --- | --- |
+| ![](docs/media/ask-user-question-flow.png) | ![](docs/media/ask-user-custom-answer.png) |
+| ![](docs/media/ask-user-notes.png) | ![](docs/media/ask-user-review.png) |
+
+## Features
+
+Once installed, this package gives the agent a native way to ask for clarification instead of guessing.
+
+- 🧭 **Multi-question flow** — gather several answers in one pass.
+- ✅ **Single + multi select** — support simple and additive choices.
+- 🪟 **Preview mode** — show richer options with a dedicated preview pane.
+- ✍️ **Custom answers** — users can choose `Type your own` and type inline.
+- 📝 **Notes** — add question-level or option-level context without breaking the flow.
+- 👀 **Submit screen** — check everything before submitting answers back to the agent.
+- ⌨️ **Fast keyboard UX** — number shortcuts, inline selection, notes, and submit navigation.
+
 ## Use
 
 After installation, the package registers one tool: `ask_user`.
 
-Use it when the agent needs structured clarification before proceeding.
+That is enough for the agent to gain this clarification capability. The extension already injects prompt guidance that encourages the agent to call `ask_user` when requirements are ambiguous or user preference matters, instead of guessing.
+
+You can still add your own agent instruction if you want to further reinforce when and how the tool should be used.
+
 Use `type: "preview"` when an option needs a dedicated preview pane.
 
-### Example agent instruction
+### Optional extra agent instruction
 
 ```text
-When requirements are ambiguous or user preferences materially affect implementation,
-call `ask_user` instead of guessing.
+If you need clarification, prefer `ask_user` over guessing.
 
 Ask 1-3 concise questions.
 Use short tab labels.
@@ -110,24 +135,7 @@ After answers are returned, continue the task using those answers explicitly.
 }
 ```
 
-## Features
-
-`ask_user` currently supports:
-
-- tabbed multi-question flow
-- single-select questions
-- multi-select questions
-- preview questions with a dedicated preview pane
-- free-form answers via an inline `Type your own` option that turns into an embedded editor when selected
-- on multi-select questions, free-form answers are additive and do not clear other selected options
-- per-question notes via `Ctrl+N`
-- per-option notes via `N`
-- full inline rendering of saved notes
-- number-key quick selection
-- final submit/review page
-- transcript rendering for call/result rows
-
-### Result shape notes
+## Returned result
 
 The returned `details.answers[questionId]` object may include:
 
@@ -142,7 +150,7 @@ The returned `details.answers[questionId]` object may include:
 }
 ```
 
-Behavior:
+Behavior details:
 
 - question-level notes are submitted whenever authored
 - option notes can be authored for any active option during the UI flow
@@ -152,7 +160,8 @@ Behavior:
 - on multi-select questions, saving a free-form answer keeps other selected options intact
 - on multi-select questions, submitted `values` and `labels` include both selected options and the free-form answer when both exist
 - when the free-form option is selected, it becomes an inline input row with the selected-tab background style spanning the full width
-- while editing a note or free-form answer, `Up` / `Down` save the draft and move navigation instead of being trapped by the editor
+- while editing a note or free-form answer, arrow keys and `Tab` stay inside the editor so the typing cursor can move naturally
+- `Esc` closes the editor and returns to navigation mode
 - `Space` toggles the active option on single-select questions too, but does not auto-advance
 
 ## Local development
@@ -194,6 +203,7 @@ pnpm commit
 - `src/` — TypeScript extension implementation
 - `tests/` — behavior-focused tests
 - `docs/` — small docs set for contract and architecture
+- `docs/media/` — repository-only README media assets
 
 ## Documentation
 
