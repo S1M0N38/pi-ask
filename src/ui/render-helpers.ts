@@ -7,6 +7,11 @@ import { UI_DIMENSIONS, UI_TEXT } from "./constants.ts";
 type Theme = ExtensionContext["ui"]["theme"];
 type ThemeColor = "accent" | "muted" | "text" | "dim" | "success" | "warning";
 
+const EDITOR_BORDER_PATTERN = /^[┌┐└┘─]+$/;
+const EDITOR_SCROLL_BORDER_PATTERN = /^─── [↑↓] \d+ more ─*$/;
+const ANSI_CONTROL_SEQUENCE = "\u001b[";
+const ANSI_TERMINATOR = "m";
+
 export function pushWrappedText(
 	lines: string[],
 	text: string,
@@ -65,8 +70,7 @@ export function renderEditorBlock(args: {
 		placeholderColor = "muted",
 		isEmpty = false,
 	} = args;
-	const innerLines =
-		editorLines.length >= 2 ? editorLines.slice(1, -1) : editorLines;
+	const innerLines = getEditorContentLines(editorLines);
 
 	if (isEmpty && placeholder) {
 		lines.push(
@@ -90,6 +94,53 @@ export function renderEditorBlock(args: {
 				width
 			)
 		);
+	}
+}
+
+function getEditorContentLines(editorLines: string[]): string[] {
+	if (editorLines.length <= 2) {
+		return editorLines;
+	}
+
+	const contentLines = editorLines.slice(1);
+	const trailingBorderIndex = contentLines.findIndex(isEditorBorderLine);
+	if (trailingBorderIndex === -1) {
+		return contentLines;
+	}
+
+	return contentLines.filter((_, index) => index !== trailingBorderIndex);
+}
+
+function isEditorBorderLine(line: string): boolean {
+	const plainText = stripAnsiColorCodes(line).trim();
+	if (plainText.length === 0) {
+		return false;
+	}
+
+	return (
+		EDITOR_BORDER_PATTERN.test(plainText) ||
+		EDITOR_SCROLL_BORDER_PATTERN.test(plainText)
+	);
+}
+
+function stripAnsiColorCodes(text: string): string {
+	let result = text;
+	while (true) {
+		const start = result.indexOf(ANSI_CONTROL_SEQUENCE);
+		if (start === -1) {
+			return result;
+		}
+
+		const end = result.indexOf(
+			ANSI_TERMINATOR,
+			start + ANSI_CONTROL_SEQUENCE.length
+		);
+		if (end === -1) {
+			return result;
+		}
+
+		result =
+			result.slice(0, start) + result.slice(end + ANSI_TERMINATOR.length);
 	}
 }
 

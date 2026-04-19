@@ -26,6 +26,7 @@ import {
 } from "../state/transitions.ts";
 import { isEditingView } from "../state/view.ts";
 import type { AskParams, AskResult, AskState } from "../types.ts";
+import { createAskAutocompleteProvider } from "./autocomplete.ts";
 import type { AskInputCommand } from "./input.ts";
 import { getInputCommand } from "./input.ts";
 import { renderAskScreen } from "./render.ts";
@@ -38,9 +39,9 @@ type Tui = CustomCallbackArgs[0];
 type Theme = CustomCallbackArgs[1];
 type Keybindings = CustomCallbackArgs[2];
 type Done = (result: AskResult) => void;
+type AskFlowParams = AskParams & Pick<ExtensionContext, "cwd">;
 
 interface AskFlowController {
-	cachedLines: string[] | undefined;
 	done: Done;
 	editor: Editor;
 	state: AskState;
@@ -54,7 +55,7 @@ export function runAskFlow(
 	params: AskParams
 ): Promise<AskResult> {
 	return ctx.ui.custom<AskResult>((...args) =>
-		createAskFlowController(args, params)
+		createAskFlowController(args, { ...params, cwd: ctx.cwd })
 	);
 }
 
@@ -65,12 +66,11 @@ function createAskFlowController(
 		Keybindings,
 		(result: AskResult) => void,
 	],
-	params: AskParams
+	params: AskFlowParams
 ) {
 	const controller: AskFlowController = {
-		cachedLines: undefined,
 		done,
-		editor: createEditor(tui, theme),
+		editor: createEditor(tui, theme, params.cwd),
 		state: createInitialState(params),
 		suppressAutoInputForSelection: false,
 		theme,
@@ -83,7 +83,7 @@ function createAskFlowController(
 	return {
 		render: (width: number) => renderController(controller, width),
 		invalidate() {
-			controller.cachedLines = undefined;
+			// The editor manages its own async autocomplete redraws.
 		},
 		handleInput(data: string) {
 			handleControllerInput(controller, data);
@@ -95,15 +95,12 @@ function renderController(
 	controller: AskFlowController,
 	width: number
 ): string[] {
-	if (!controller.cachedLines) {
-		controller.cachedLines = renderAskScreen({
-			editor: controller.editor,
-			state: controller.state,
-			theme: controller.theme,
-			width,
-		});
-	}
-	return controller.cachedLines;
+	return renderAskScreen({
+		editor: controller.editor,
+		state: controller.state,
+		theme: controller.theme,
+		width,
+	});
 }
 
 function handleControllerInput(controller: AskFlowController, data: string) {
@@ -268,7 +265,6 @@ function submitEditorValue(state: AskState, value: string): AskState {
 }
 
 function refresh(controller: AskFlowController) {
-	controller.cachedLines = undefined;
 	controller.tui.requestRender();
 }
 
@@ -331,8 +327,14 @@ function saveEditorAndMoveOption(
 	return moveOption(nextState, delta);
 }
 
-function createEditor(tui: Tui, theme: Theme) {
-	const editorTheme: EditorTheme = {
+function createEditor(tui: Tui, theme: Theme, cwd: string) {
+	const editor = new Editor(tui, createEditorTheme(theme));
+	editor.setAutocompleteProvider(createAskAutocompleteProvider(cwd));
+	return editor;
+}
+
+function createEditorTheme(theme: Theme): EditorTheme {
+	return {
 		borderColor: (text) => theme.fg("accent", text),
 		selectList: {
 			description: (text) => theme.fg("muted", text),
@@ -342,7 +344,6 @@ function createEditor(tui: Tui, theme: Theme) {
 			selectedText: (text) => theme.fg("accent", text),
 		},
 	};
-	return new Editor(tui, editorTheme);
 }
 
 function getEditorTextForCurrentView(state: AskState): string {

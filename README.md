@@ -161,6 +161,7 @@ Behavior details:
 - on multi-select questions, submitted `values` and `labels` include both selected options and the free-form answer when both exist
 - when the free-form option is selected, it becomes an inline input row with the selected-tab background style spanning the full width
 - while editing a note or free-form answer, arrow keys and `Tab` stay inside the editor so the typing cursor can move naturally
+- free-form answer editors support pi-style `@` file path autocomplete for quickly mentioning project files
 - `Esc` closes the editor and returns to navigation mode
 - `Space` toggles the active option on single-select questions too, but does not auto-advance
 

@@ -79,6 +79,7 @@ This document defines the stable external behavior. It does not explain internal
 - tabbed multi-question flow
 - single-select, multi-select, and preview questions
 - inline free-form answers for non-preview questions
+- pi-style `@` file path autocomplete inside free-form answer and note editors
 - question notes via `Ctrl+N`
 - option notes via `N`
 - number-key quick selection
