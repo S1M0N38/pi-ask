@@ -234,7 +234,7 @@ The fallback message includes normalized pending questions and options so the ca
 
 ## Skill alignment (advisory)
 
-The optional skill profile at `skills/ask-user/SKILL.md` defines agent-side decision-gate guidance for when to call `ask_user`.
+The auto-bundled skill profile at `skills/ask-user/SKILL.md` defines agent-side decision-gate guidance for when to call `ask_user`. It is enabled by default when the package is installed, but can be disabled via `pi config`.
 
 It is advisory only. If there is any conflict, contract + tests win.
 

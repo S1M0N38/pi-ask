@@ -6,7 +6,7 @@ This folder keeps only the documentation needed to understand and maintain the e
 
 - `contract.md` — external behavior, result shape, and UX guarantees
 - `architecture.md` — module boundaries and invariants
-- `../skills/ask-user/SKILL.md` — optional agent-side decision-gate guidance
+- `../skills/ask-user/SKILL.md` — auto-bundled agent-side decision-gate guidance; enabled by default, but can be disabled via `pi config`
 
 ## Reading order
 
