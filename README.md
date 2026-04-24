@@ -280,7 +280,6 @@ Behavior details:
 - `details.continuation.affectedQuestionIds` lists the only questions that should be revisited
 - `details.continuation.questionStates` marks each question as `answered`, `needs_clarification`, or `unanswered`
 - submit review tab now offers `Submit`, `Elaborate`, and `Cancel`
-- on the review tab, number hotkeys `1`, `2`, and `3` trigger `Submit`, `Elaborate`, and `Cancel`
 - while `Submit` or `Cancel` is highlighted on the review tab, notes are previewed only for questions with selected answers
 - while `Elaborate` is highlighted on the review tab, the preview expands to show all question notes and all option notes, including notes on unselected options
 - choosing `Elaborate` finishes immediately and returns `mode: "elaborate"`
@@ -290,14 +289,36 @@ Behavior details:
 - after clarification, agents should prefer another structured follow-up over plain-text multiple choice if a decision is still unresolved
 - once prior answers narrow the branch, agents should bundle the next 2-3 related unresolved decisions into one follow-up ask when possible instead of asking a long chain of one-question follow-ups
 - elaborate summary/result text now emits direct note-specific lines such as `User asked to elaborate on question "Which option would you like to select?" option "Option A" with note "why this one?"`
-- when the free-form option is selected, it becomes an inline input row with the selected-tab background style spanning the full width
-- while editing a note or free-form answer, arrow keys and `Tab` stay inside the editor while text is present so the typing cursor can move naturally
-- when a note or free-form editor is empty, `Up`/`Down` navigate options and `Tab`/`Shift+Tab`/`Left`/`Right` navigate tabs without closing the editor first
 - free-form answer editors support pi-style `@` file path autocomplete for quickly mentioning project files
-- `Esc` closes the editor and returns to navigation mode
-- `Ctrl+C` dismisses the entire ask flow immediately, even from note/free-form editing, without saving the current draft
-- use `n` for the active option note and `Shift+N` for the current question note
-- `Space` toggles the active option on single-select questions too, but does not auto-advance
+- keyboard interactions for navigation, editing, review actions, and cancellation are listed in [Key bindings](#key-bindings) below
+
+---
+
+## Key bindings
+
+| Key                         | Context                                 | Effect                                      |
+|-----------------------------|-----------------------------------------|---------------------------------------------|
+| `Tab` `Shift+Tab`           | Main flow                               | Switch tabs                                 |
+| `←` `→`                     | Main flow                               | Switch tabs                                 |
+| `↑` `↓`                     | Main flow                               | Move cursor                                 |
+| `1..9`                      | Options list                            | Select or toggle matching option            |
+| `Space`                     | Single- or multi-select option          | Toggle selection                            |
+| `Enter`                     | Single-select option                    | Confirm and continue                        |
+| `Enter`                     | Multi-select option                     | Continue                                    |
+| `n`                         | Active option                           | Edit option note                            |
+| `Shift+N`                   | Current question                        | Edit question note                          |
+| `1` `2` `3`                 | Review tab                              | Trigger `Submit` / `Elaborate` / `Cancel`   |
+| `↑` `↓`                     | Review tab                              | Change highlighted review action            |
+| `Enter`                     | Review tab                              | Confirm highlighted review action           |
+| `Enter`                     | Free-form answer editor                 | Save and submit current input               |
+| `Enter`                     | Note editor                             | Save current note                           |
+| `Esc`                       | Free-form or note editor                | Save draft and close editor                 |
+| `Ctrl+C`                    | Anywhere                                | Dismiss entire ask flow immediately         |
+| `↑` `↓`                     | Empty editor                            | Move options without closing editor         |
+| `Tab` `Shift+Tab` / `←` `→` | Empty editor                            | Switch tabs without closing editor          |
+| Arrow keys / `Tab`          | Non-empty editor                        | Stay in editor for cursor movement          |
+
+---
 
 If pi runs without UI, `ask_user` returns a `Needs user input` message plus normalized pending questions in `details.questions` so a caller can re-ask them manually.
 

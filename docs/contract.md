@@ -232,6 +232,12 @@ Validation is handled inside the tool so malformed calls produce the same struct
 
 The fallback message includes normalized pending questions and options so the caller can re-ask them manually. `details.questions` still contains normalized question metadata, while `details.answers` stays empty until a user responds.
 
+## Skill alignment (advisory)
+
+The optional skill profile at `skills/ask-user/SKILL.md` defines agent-side decision-gate guidance for when to call `ask_user`.
+
+It is advisory only. If there is any conflict, contract + tests win.
+
 ## Source of truth
 
 Behavior should be verified against:

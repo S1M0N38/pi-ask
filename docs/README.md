@@ -6,6 +6,7 @@ This folder keeps only the documentation needed to understand and maintain the e
 
 - `contract.md` — external behavior, result shape, and UX guarantees
 - `architecture.md` — module boundaries and invariants
+- `../skills/ask-user/SKILL.md` — optional agent-side decision-gate guidance
 
 ## Reading order
 
