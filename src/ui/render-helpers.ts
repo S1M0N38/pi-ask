@@ -330,6 +330,19 @@ export function measurePreviewLeftWidth(
 	);
 }
 
+export function getSavedNotePrefixes(
+	theme: Theme,
+	args: { indent: string; label?: string }
+) {
+	const title = args.label
+		? `${args.label} ${UI_TEXT.questionNoteTitle}`
+		: UI_TEXT.questionNoteTitle;
+	return {
+		prefix: `${args.indent}${theme.fg("syntaxString", title)} `,
+		continuationPrefix: `${args.indent}${" ".repeat(visibleWidth(title) + 1)}`,
+	};
+}
+
 export function renderFooterText(
 	mode: "input" | "note" | "submit" | "multi" | "default"
 ) {

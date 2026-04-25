@@ -45,6 +45,10 @@ export function renderFrameFooter(args: {
 	add(theme.fg("accent", "─".repeat(Math.max(1, width))));
 }
 
+const TAB_PREFIX = " ← ";
+const TAB_SUFFIX = " →";
+const TAB_SEPARATOR_WIDTH = visibleWidth(" ");
+
 function renderTabs(state: AskState, theme: Theme, width: number): string {
 	const tabs = state.questions.map((question, index) => {
 		const active = state.activeTabIndex === index;
@@ -70,18 +74,25 @@ function renderTabs(state: AskState, theme: Theme, width: number): string {
 	});
 
 	const activeIndex = Math.min(state.activeTabIndex, tabs.length - 1);
+	const availableTabWidth = Math.max(
+		1,
+		width - visibleWidth(TAB_PREFIX) - visibleWidth(TAB_SUFFIX)
+	);
 	const { start, end } = getVisibleTabRange(
 		tabs.map((tab) => tab.width),
 		activeIndex,
-		Math.max(1, width - 2)
+		availableTabWidth
 	);
-	const leftArrow = theme.fg("dim", "← ");
-	const rightArrow = theme.fg("dim", " →");
+	const leftArrow = theme.fg("dim", TAB_PREFIX.trimStart());
+	const rightArrow = theme.fg("dim", TAB_SUFFIX);
 	const visibleTabs = tabs
 		.slice(start, end + 1)
 		.map((tab) => tab.render)
 		.join(" ");
-	return truncateToWidth(` ${leftArrow}${visibleTabs}${rightArrow}`, width);
+	return truncateToWidth(
+		`${TAB_PREFIX[0]}${leftArrow}${visibleTabs}${rightArrow}`,
+		width
+	);
 }
 
 function getVisibleTabRange(
@@ -95,92 +106,76 @@ function getVisibleTabRange(
 
 	const totalWidth =
 		widths.reduce((sum, width) => sum + width, 0) +
-		Math.max(0, widths.length - 1);
+		Math.max(0, widths.length - 1) * TAB_SEPARATOR_WIDTH;
 	if (totalWidth <= availableWidth) {
 		return { start: 0, end: widths.length - 1 };
 	}
 
-	const zone = activeIndex / Math.max(1, widths.length - 1);
-	const mode = getViewportMode(zone);
-	return expandTabs(widths, activeIndex, availableWidth, mode);
-}
-
-function getViewportMode(zone: number): "left" | "right" | "balanced" {
-	if (zone <= 0.33) {
-		return "right";
-	}
-	if (zone >= 0.67) {
-		return "left";
-	}
-	return "balanced";
-}
-
-function expandTabs(
-	widths: number[],
-	activeIndex: number,
-	availableWidth: number,
-	mode: "left" | "right" | "balanced"
-): { start: number; end: number } {
 	const range = { start: activeIndex, end: activeIndex };
 	let usedWidth = widths[activeIndex] ?? 0;
-	let preferRight = mode !== "left";
+	let preferRight = activeIndex <= widths.length - activeIndex - 1;
 
 	while (true) {
-		const directions = getGrowthDirections(mode, preferRight);
-		const grew = directions.some((direction) => {
-			const nextWidth = getNextTabWidth(widths, range, direction);
-			if (
-				nextWidth === undefined ||
-				usedWidth + 1 + nextWidth > availableWidth
-			) {
-				return false;
-			}
-			usedWidth += 1 + nextWidth;
-			growRange(range, direction);
-			return true;
-		});
-		if (!grew) {
+		const expansion = getExpandableTab(
+			widths,
+			range,
+			availableWidth,
+			usedWidth,
+			preferRight
+		);
+		if (!expansion) {
 			return range;
 		}
-		if (mode === "balanced") {
-			preferRight = !preferRight;
-		}
+		usedWidth += TAB_SEPARATOR_WIDTH + expansion.width;
+		applyTabGrowth(range, expansion.nextIndex, expansion.direction);
+		preferRight = !preferRight;
 	}
 }
 
-function getGrowthDirections(
-	mode: "left" | "right" | "balanced",
+function getExpandableTab(
+	widths: number[],
+	range: { start: number; end: number },
+	availableWidth: number,
+	usedWidth: number,
 	preferRight: boolean
-): Array<"left" | "right"> {
-	if (mode === "left") {
-		return ["left", "right"];
+):
+	| { direction: "left" | "right"; nextIndex: number; width: number }
+	| undefined {
+	for (const direction of getGrowthDirections(preferRight)) {
+		const nextIndex = getNextTabIndex(range, direction);
+		const nextWidth = widths[nextIndex];
+		if (
+			nextWidth === undefined ||
+			usedWidth + TAB_SEPARATOR_WIDTH + nextWidth > availableWidth
+		) {
+			continue;
+		}
+		return { direction, nextIndex, width: nextWidth };
 	}
-	if (mode === "right") {
-		return ["right", "left"];
-	}
+	return;
+}
+
+function getGrowthDirections(preferRight: boolean): Array<"left" | "right"> {
 	return preferRight ? ["right", "left"] : ["left", "right"];
 }
 
-function getNextTabWidth(
-	widths: number[],
+function getNextTabIndex(
 	range: { start: number; end: number },
 	direction: "left" | "right"
-): number | undefined {
-	if (direction === "left") {
-		return widths[range.start - 1];
-	}
-	return widths[range.end + 1];
+): number {
+	return direction === "left" ? range.start - 1 : range.end + 1;
 }
 
-function growRange(
+function applyTabGrowth(
 	range: { start: number; end: number },
+	nextIndex: number,
 	direction: "left" | "right"
 ) {
 	if (direction === "left") {
-		range.start -= 1;
+		range.start = nextIndex;
 		return;
 	}
-	range.end += 1;
+	range.end = nextIndex;
 }
 
 function renderFooter(state: AskState, width: number): string[] {
@@ -195,10 +190,10 @@ function renderFooter(state: AskState, width: number): string[] {
 		const question = getCurrentQuestion(state);
 		footer = renderFooterText(question?.type === "multi" ? "multi" : "default");
 	}
-	return wrapFooterHints(footer, width);
+	return wrapDelimitedFooterHints(footer, width);
 }
 
-function wrapFooterHints(footer: string, width: number): string[] {
+function wrapDelimitedFooterHints(footer: string, width: number): string[] {
 	return footer.split(" · ").reduce<string[]>((lines, chunk) => {
 		const current = lines.at(-1) ?? "";
 		const next = current ? `${current} · ${chunk}` : chunk;
@@ -217,6 +212,7 @@ function wrapFooterHints(footer: string, width: number): string[] {
 			lines.push(...wrappedChunk);
 			return lines;
 		}
+		lines.push(current);
 		lines.push(...wrappedChunk);
 		return lines;
 	}, []);

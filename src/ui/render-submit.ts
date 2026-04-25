@@ -3,7 +3,11 @@ import { SUBMIT_CHOICES } from "../constants.ts";
 import { serializeAnswer } from "../state/answers.ts";
 import type { AskResult, AskState, AskStateAnswer } from "../types.ts";
 import { UI_DIMENSIONS, UI_TEXT } from "./constants.ts";
-import { mergeColumns, pushWrappedText } from "./render-helpers.ts";
+import {
+	getSavedNotePrefixes,
+	mergeColumns,
+	pushWrappedText,
+} from "./render-helpers.ts";
 import type { Theme } from "./render-types.ts";
 
 type ReviewAnswer = AskResult["answers"][string] & {
@@ -20,21 +24,21 @@ export function renderSubmitScreen(
 	width: number
 ) {
 	const showAllNotes = state.activeSubmitActionIndex === 1;
+	const actionColumnWidth = getSubmitActionColumnWidth();
 
-	if (shouldUseWideSubmitLayout(width)) {
-		const leftWidth = UI_DIMENSIONS.submitActionsWidth;
-		const rightWidth = Math.max(1, width - leftWidth - 2);
+	if (shouldUseWideSubmitLayout(width, actionColumnWidth)) {
+		const rightWidth = Math.max(1, width - actionColumnWidth - 2);
 		const reviewLines = renderSubmitReviewLines(
 			state,
 			theme,
 			rightWidth,
 			showAllNotes
 		);
-		const actionLines = renderSubmitActionLines(state, theme, leftWidth);
+		const actionLines = renderSubmitActions(state, theme, actionColumnWidth);
 		for (const line of mergeColumns(
 			actionLines,
 			reviewLines,
-			leftWidth,
+			actionColumnWidth,
 			width
 		)) {
 			lines.push(line);
@@ -48,7 +52,7 @@ export function renderSubmitScreen(
 		width,
 		showAllNotes
 	);
-	const actionLines = renderSubmitActionLines(state, theme, width);
+	const actionLines = renderSubmitActions(state, theme, width);
 	lines.push(...reviewLines);
 	lines.push("");
 	lines.push(...actionLines);
@@ -81,18 +85,22 @@ function renderSubmitReviewLines(
 	return lines;
 }
 
-function renderSubmitActionLines(
-	state: AskState,
-	theme: Theme,
-	width: number
-): string[] {
-	const lines: string[] = [];
-	renderSubmitActions(lines, state, theme, width);
-	return lines;
+function getSubmitActionColumnWidth(): number {
+	return Math.max(
+		...SUBMIT_CHOICES.map((choice, index) =>
+			visibleWidth(`❯ ${index + 1}. ${choice}`)
+		)
+	);
 }
 
-function shouldUseWideSubmitLayout(width: number): boolean {
-	return width >= UI_DIMENSIONS.submitWideMinWidth;
+function shouldUseWideSubmitLayout(
+	width: number,
+	actionColumnWidth: number
+): boolean {
+	return (
+		width >= UI_DIMENSIONS.submitWideMinWidth &&
+		width - actionColumnWidth - 2 >= UI_DIMENSIONS.submitMinReviewWidth
+	);
 }
 
 function renderSubmittedQuestion(
@@ -188,16 +196,16 @@ function renderSubmittedNote(
 	theme: Theme,
 	width: number
 ) {
-	const indent = "     ";
-	const notePrefix = `${indent}${theme.fg("syntaxString", UI_TEXT.questionNoteTitle)} `;
-	const continuationPrefix = `${indent}${" ".repeat(visibleWidth(UI_TEXT.questionNoteTitle) + 1)}`;
+	const { prefix, continuationPrefix } = getSavedNotePrefixes(theme, {
+		indent: "     ",
+	});
 	pushWrappedText(
 		lines,
 		note,
 		width,
 		theme,
 		"muted",
-		notePrefix,
+		prefix,
 		continuationPrefix
 	);
 }
@@ -209,17 +217,17 @@ function renderLabeledSubmittedNote(
 	theme: Theme,
 	width: number
 ) {
-	const indent = "     ";
-	const title = `${label} ${UI_TEXT.questionNoteTitle}`;
-	const notePrefix = `${indent}${theme.fg("syntaxString", title)} `;
-	const continuationPrefix = `${indent}${" ".repeat(visibleWidth(title) + 1)}`;
+	const { prefix, continuationPrefix } = getSavedNotePrefixes(theme, {
+		indent: "     ",
+		label,
+	});
 	pushWrappedText(
 		lines,
 		note,
 		width,
 		theme,
 		"muted",
-		notePrefix,
+		prefix,
 		continuationPrefix
 	);
 }
@@ -282,11 +290,11 @@ function toReviewAnswer(
 }
 
 function renderSubmitActions(
-	lines: string[],
 	state: AskState,
 	theme: Theme,
 	width: number
-) {
+): string[] {
+	const lines: string[] = [];
 	for (let index = 0; index < SUBMIT_CHOICES.length; index++) {
 		const selected = index === state.activeSubmitActionIndex;
 		const prefix = selected ? "❯ " : "  ";
@@ -300,4 +308,5 @@ function renderSubmitActions(
 			prefix
 		);
 	}
+	return lines;
 }

@@ -11,6 +11,7 @@ import {
 import type { AskDisplayOption } from "../types.ts";
 import { UI_DIMENSIONS, UI_TEXT } from "./constants.ts";
 import {
+	getSavedNotePrefixes,
 	measurePreviewLeftWidth,
 	mergeColumns,
 	pushWrappedText,
@@ -57,14 +58,17 @@ function renderQuestionNote(context: QuestionRenderContext): boolean {
 	if (!existingNote) {
 		return false;
 	}
+	const { prefix, continuationPrefix } = getSavedNotePrefixes(theme, {
+		indent: " ",
+	});
 	pushWrappedText(
 		lines,
 		existingNote,
 		width,
 		theme,
 		"muted",
-		getSavedNotePrefix(theme, " "),
-		getSavedNoteContinuationPrefix(" ")
+		prefix,
+		continuationPrefix
 	);
 	lines.push("");
 	return true;
@@ -154,6 +158,7 @@ function renderPreviewQuestion(context: QuestionRenderContext) {
 		answer,
 		option: selectedOption,
 		selected: true,
+		// Custom preview options already render their inline editor/content above.
 		withGap: !selectedOption?.isCustomOption,
 	});
 }
@@ -370,14 +375,17 @@ function renderSavedOptionNote(
 		return;
 	}
 	const { lines, theme, width } = context;
+	const { prefix, continuationPrefix } = getSavedNotePrefixes(theme, {
+		indent: "     ",
+	});
 	pushWrappedText(
 		lines,
 		optionNote,
 		width,
 		theme,
 		"muted",
-		getSavedNotePrefix(theme, "     "),
-		getSavedNoteContinuationPrefix("     ")
+		prefix,
+		continuationPrefix
 	);
 }
 
@@ -427,14 +435,6 @@ function renderIndentedEditor(
 		placeholder,
 		isEmpty: editor.getText().length === 0,
 	});
-}
-
-function getSavedNotePrefix(theme: Theme, indent: string): string {
-	return `${indent}${theme.fg("syntaxString", UI_TEXT.questionNoteTitle)} `;
-}
-
-function getSavedNoteContinuationPrefix(indent: string): string {
-	return `${indent}${" ".repeat(visibleWidth(UI_TEXT.questionNoteTitle) + 1)}`;
 }
 
 function getOptionPrefix(

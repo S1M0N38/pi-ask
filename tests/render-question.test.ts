@@ -210,5 +210,5 @@ test("preview custom option reuses the normal inline editor", () => {
 	const optionIndex = lines.findIndex((line) => line.includes("Type your own"));
 	const inputIndex = lines.findIndex((line) => line.includes("Type answer..."));
 	assert.equal(inputIndex, optionIndex + 1);
-	assert(!lines.some((line) => line.includes("asdasddasdasdasdere")));
+	assert(!lines.some((line) => line.includes("Preview A")));
 });

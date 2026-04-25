@@ -7,15 +7,16 @@ import {
 	enterQuestionNoteMode,
 	saveNote,
 } from "../src/state/transitions.ts";
+import { UI_DIMENSIONS } from "../src/ui/constants.ts";
 import { renderSubmitScreen } from "../src/ui/render-submit.ts";
 
-function mockTheme() {
+function plainTheme() {
 	return {
-		fg(color: string, text: string) {
-			return `<${color}>${text}</${color}>`;
+		fg(_color: string, text: string) {
+			return text;
 		},
-		bg(color: string, text: string) {
-			return `{${color}}${text}{/${color}}`;
+		bg(_color: string, text: string) {
+			return text;
 		},
 		bold(text: string) {
 			return text;
@@ -36,7 +37,12 @@ test("submit screen uses shorter action labels without extra prompt text", () =>
 	});
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 80);
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth + 16
+	);
 
 	assert(!lines.some((line) => line.includes("Submit answers?")));
 	assert(lines.some((line) => line.includes("1. Submit")));
@@ -58,7 +64,12 @@ test("submit screen uses side-by-side layout on wide screens", () => {
 	});
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 120);
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth + 16
+	);
 
 	assert(
 		lines.some(
@@ -83,7 +94,12 @@ test("submit screen stacks review above actions on narrow screens", () => {
 	});
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 50);
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth - 14
+	);
 
 	const reviewIndex = lines.findIndex((line) =>
 		line.includes("Review answers")
@@ -127,11 +143,14 @@ test("submit screen shows notes only for answered questions in submit mode", () 
 	state = saveNote(state, "Second note");
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 140);
-
-	const firstQuestionIndex = lines.findIndex((line) =>
-		line.includes("<text>Single</text>")
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth + 76
 	);
+
+	const firstQuestionIndex = lines.findIndex((line) => line.includes("Single"));
 	const firstQuestionNoteIndex = lines.findIndex((line) =>
 		line.includes("Question note")
 	);
@@ -141,9 +160,7 @@ test("submit screen shows notes only for answered questions in submit mode", () 
 	const optionNoteIndex = lines.findIndex((line) =>
 		line.includes("Option note")
 	);
-	const secondQuestionIndex = lines.findIndex((line) =>
-		line.includes("<text>Multi</text>")
-	);
+	const secondQuestionIndex = lines.findIndex((line) => line.includes("Multi"));
 
 	assert.notEqual(firstQuestionIndex, -1);
 	assert.notEqual(firstQuestionNoteIndex, -1);
@@ -155,9 +172,7 @@ test("submit screen shows notes only for answered questions in submit mode", () 
 	assert(lines[firstQuestionNoteIndex]?.startsWith("     "));
 	assert(lines[optionNoteIndex]?.startsWith("     "));
 	assert.equal(lines[secondQuestionIndex - 1]?.trim(), "");
-	assert(
-		lines.some((line) => line.includes("<syntaxString>Note:</syntaxString>"))
-	);
+	assert(lines.some((line) => line.includes("Note:")));
 	assert(!lines.some((line) => line.includes("Second note")));
 	assert(!lines.some((line) => line.includes("Question note:")));
 	assert(!lines.some((line) => line.includes("Code demo note:")));
@@ -200,7 +215,12 @@ test("submit screen shows all notes when elaborate action is selected", () => {
 	state = { ...state, activeSubmitActionIndex: 1 };
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 120);
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth + 16
+	);
 
 	assert(lines.some((line) => line.includes("Question note")));
 	assert(lines.some((line) => line.includes("Selected option note")));
@@ -233,7 +253,12 @@ test("submit screen renders multi-select option notes under their related answer
 	state = saveNote(state, "Second note");
 
 	const lines: string[] = [];
-	renderSubmitScreen(lines, state, mockTheme(), 140);
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth + 76
+	);
 
 	const firstAnswerIndex = lines.findIndex((line) =>
 		line.includes("→ Follow-up action")
@@ -253,4 +278,34 @@ test("submit screen renders multi-select option notes under their related answer
 	assert(firstAnswerIndex < firstNoteIndex);
 	assert(firstNoteIndex < secondAnswerIndex);
 	assert(secondAnswerIndex < secondNoteIndex);
+});
+
+test("submit action column fits all action labels at the wide breakpoint", () => {
+	const state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				label: "Color",
+				prompt: "Pick one color.",
+				options: [{ value: "blue", label: "Blue" }],
+			},
+		],
+	});
+
+	const lines: string[] = [];
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth
+	);
+
+	assert(
+		lines.some(
+			(line) => line.includes("1. Submit") && line.includes("Review answers")
+		)
+	);
+	assert(lines.some((line) => line.includes("2. Elaborate")));
+	assert(lines.some((line) => line.includes("3. Cancel")));
+	assert(!lines.some((line) => line.includes("Elaborat\n")));
 });
