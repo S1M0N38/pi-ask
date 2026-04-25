@@ -133,6 +133,15 @@ For exact input/output and UX guarantees, see [`docs/contract.md`](docs/contract
 pi -e ./src/index.ts
 ```
 
+### Run in isolated test mode (extension + bundled skill only)
+
+```bash
+pnpm dev
+pnpm dev ../test
+```
+
+`pnpm dev [path]` runs pi with `--no-extensions --no-skills --no-prompt-templates --no-themes --no-context-files`, loads this repo’s extension and `skills/ask-user`, and sets the working directory to `[path]` (defaults to `.`).
+
 ### Install dependencies
 
 ```bash
