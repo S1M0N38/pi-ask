@@ -1,3 +1,17 @@
+# [0.6.0](https://github.com/eko24ive/pi-ask/compare/v0.5.1...v0.6.0) (2026-04-25)
+
+
+### Bug Fixes
+
+* **ui:** tighten ask layout rendering ([3515098](https://github.com/eko24ive/pi-ask/commit/351509838cd14ad251ca4b152c0bb4577c9d7b79))
+
+
+### Features
+
+* **ui:** improve narrow-screen tab and footer rendering ([1ce7210](https://github.com/eko24ive/pi-ask/commit/1ce721094c21faf6180098a7244b6f2abd13623e))
+* **ui:** split submit tab into actions and review ([b59c967](https://github.com/eko24ive/pi-ask/commit/b59c967d985a6f62dc32da3b4f2c5767d01608a9))
+* **ui:** support custom answers in preview questions ([7cca5eb](https://github.com/eko24ive/pi-ask/commit/7cca5eb54d1964d19ce17ebb45507f1939960b8b))
+
 ## [0.5.1](https://github.com/eko24ive/pi-ask/compare/v0.5.0...v0.5.1) (2026-04-25)
 
 
