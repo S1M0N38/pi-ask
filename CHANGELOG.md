@@ -1,3 +1,10 @@
+## [0.6.1](https://github.com/eko24ive/pi-ask/compare/v0.6.0...v0.6.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* remove automatic lefthook install ([4f1c598](https://github.com/eko24ive/pi-ask/commit/4f1c59818137cbcd335d5153c835e3f420aab575))
+
 # [0.6.0](https://github.com/eko24ive/pi-ask/compare/v0.5.1...v0.6.0) (2026-04-25)
 
 
