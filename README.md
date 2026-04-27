@@ -148,6 +148,14 @@ pnpm dev ../test
 pnpm install
 ```
 
+### Install git hooks (contributors)
+
+`lefthook` is not installed automatically. If you want the local commit hooks used by this repo, run:
+
+```bash
+pnpm exec lefthook install
+```
+
 ### Development commands
 
 ```bash
@@ -161,6 +169,12 @@ pnpm test
 ### Commit workflow
 
 This repo uses `lefthook`, Commitizen, conventional commitlint, and semantic-release.
+
+If you want local hooks, install them once after `pnpm install`:
+
+```bash
+pnpm exec lefthook install
+```
 
 Recommended flow:
 

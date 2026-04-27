@@ -36,7 +36,6 @@
     "check": "ultracite check",
     "check:ci": "biome ci .",
     "fix": "ultracite fix",
-    "prepare": "node -e \"if (!process.env.CI) { require('node:child_process').execSync('lefthook install', { stdio: 'inherit' }); } else { console.log('Skipping lefthook install in CI'); }\"",
     "commit": "cz",
     "commitlint": "commitlint",
     "release": "semantic-release"
