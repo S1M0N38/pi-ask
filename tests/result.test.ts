@@ -334,6 +334,85 @@ test("elaborate results keep committed answers alongside elaboration context", (
 		},
 		note: "Compare tradeoffs",
 	});
+	assert.equal(
+		summarizeResult(result),
+		'User asked to elaborate on question "Pick a framework" after current answer "Vue" with note "Compare tradeoffs"'
+	);
+	assert.equal(
+		renderResultText(result),
+		'User asked to elaborate on question "Pick a framework" after current answer "Vue" with note "Compare tradeoffs"'
+	);
+});
+
+test("elaboration summary includes custom answers in note context", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "framework",
+				label: "Framework",
+				prompt: "Pick a framework",
+				options: [
+					{ value: "react", label: "React" },
+					{ value: "vue", label: "Vue" },
+				],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 3);
+	state = submitCustomAnswer(state, "SolidStart");
+	state = enterQuestionNoteMode(state, "framework");
+	state = saveNote(state, "Compare tradeoffs");
+	state = { ...state, mode: "elaborate" };
+	const result = toAskResult(state);
+
+	assert.equal(
+		summarizeResult(result),
+		'User asked to elaborate on question "Pick a framework" after current answer "SolidStart" with note "Compare tradeoffs"'
+	);
+	assert.equal(
+		renderResultText(result),
+		'User asked to elaborate on question "Pick a framework" after current answer "SolidStart" with note "Compare tradeoffs"'
+	);
+	assert.deepEqual(result.elaboration?.items[0]?.answer, {
+		values: ["SolidStart"],
+		labels: ["SolidStart"],
+		indices: [],
+		customText: "SolidStart",
+		note: "Compare tradeoffs",
+		optionNotes: undefined,
+	});
+});
+
+test("elaboration summary includes answered custom text even without notes", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "demo_goal",
+				label: "Goal",
+				prompt: "What kind of ask_user showcase would you like?",
+				options: [
+					{ value: "simple-demo", label: "Simple demo" },
+					{ value: "code-example", label: "Code example" },
+				],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 3);
+	state = submitCustomAnswer(state, "teeeel meee whyyyyy");
+	state = { ...state, mode: "elaborate" };
+	const result = toAskResult(state);
+
+	assert.equal(
+		summarizeResult(result),
+		'User asked to elaborate on question "What kind of ask_user showcase would you like?" after current answer "teeeel meee whyyyyy"'
+	);
+	assert.equal(
+		renderResultText(result),
+		'User asked to elaborate on question "What kind of ask_user showcase would you like?" after current answer "teeeel meee whyyyyy"'
+	);
+	assert.deepEqual(result.elaboration?.items, []);
 });
 
 test("elaborate continuation preserves unrelated committed answers", () => {

@@ -71,16 +71,40 @@ export function formatElaborationLines(
 ): string[] {
 	const items = result.elaboration?.items ?? [];
 	const lines = items.map((item) => {
+		const answerContext = formatElaborationAnswerContext(item.answer);
 		if (item.target.kind === "question") {
-			return `User asked to elaborate on question ${quote(item.question.prompt)} with note ${quote(item.note)}`;
+			return `User asked to elaborate on question ${quote(item.question.prompt)}${answerContext} with note ${quote(item.note)}`;
 		}
 		if (!("option" in item)) {
-			return `User asked to elaborate on question ${quote(item.question.prompt)} with note ${quote(item.note)}`;
+			return `User asked to elaborate on question ${quote(item.question.prompt)}${answerContext} with note ${quote(item.note)}`;
 		}
-		return `User asked to elaborate on question ${quote(item.question.prompt)} option ${quote(item.option.label)} with note ${quote(item.note)}`;
+		return `User asked to elaborate on question ${quote(item.question.prompt)} option ${quote(item.option.label)}${answerContext} with note ${quote(item.note)}`;
 	});
 
-	return lines.length > 0 ? lines : [ELABORATED_SUMMARY];
+	if (lines.length > 0) {
+		return lines;
+	}
+
+	const answerLines = result.questions
+		.map((question) => {
+			const answer = result.answers[question.id];
+			return answer?.labels.length
+				? `User asked to elaborate on question ${quote(question.prompt)} after current answer ${quote(answer.labels.join(", "))}`
+				: undefined;
+		})
+		.filter((line): line is string => Boolean(line));
+
+	return answerLines.length > 0 ? answerLines : [ELABORATED_SUMMARY];
+}
+
+function formatElaborationAnswerContext(
+	answer: AskResult["answers"][string] | undefined
+): string {
+	const labels = answer?.labels ?? [];
+	if (labels.length === 0) {
+		return "";
+	}
+	return ` after current answer ${quote(labels.join(", "))}`;
 }
 
 function quote(value: string): string {

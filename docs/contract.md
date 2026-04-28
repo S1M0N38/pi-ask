@@ -184,7 +184,8 @@ This document defines the stable external behavior. It does not explain internal
 - after clarification, agents should prefer another structured follow-up over plain-text multiple choice when a decision is still unresolved
 - once prior answers narrow the branch, agents should bundle the next 2-3 related unresolved questions into one follow-up ask when possible, instead of using a long sequence of single-question asks
 - `elaboration` is only present when `mode === "elaborate"`
-- elaborate `content` text and transcript rendering describe each note directly using the full question prompt and option label, instead of a generic elaboration banner
+- elaborate `content` text and transcript rendering describe each note directly using the full question prompt and option label, and include the current committed answer text when available, instead of a generic elaboration banner
+- when the user selects `Elaborate` without adding notes, elaborate `content` text and transcript rendering still include the committed answer text so the agent can elaborate on that answer directly
 
 ## Supported UX
 
