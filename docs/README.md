@@ -4,13 +4,15 @@ This folder keeps only the documentation needed to understand and maintain the e
 
 ## Files
 
+- `configuration.md` — source of truth for configuring pi-ask keymaps and behaviour
 - `contract.md` — external behavior, full tool payload/result details, and UX guarantees
 - `architecture.md` — module boundaries and invariants
 - `../skills/ask-user/SKILL.md` — auto-bundled agent-side decision-gate guidance; enabled by default, but can be disabled via `pi config`; inspired by https://github.com/edlsh/pi-ask-user
 
 ## Reading order
 
-- start with `contract.md` for behavior
+- start with `configuration.md` for config-editing rules
+- read `contract.md` for behavior
 - read `architecture.md` for code layout
 
 ## Local test run

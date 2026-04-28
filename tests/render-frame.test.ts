@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { DEFAULT_ASK_CONFIG } from "../src/config/defaults.ts";
 import { createInitialState } from "../src/state/create.ts";
 import { renderAskScreen } from "../src/ui/render.ts";
 
@@ -48,6 +49,7 @@ test("wide header keeps all tabs and framing arrows on the tab row", () => {
 	});
 
 	const lines = renderAskScreen({
+		config: DEFAULT_ASK_CONFIG,
 		state,
 		theme: plainTheme(),
 		width: 120,
@@ -96,6 +98,7 @@ test("narrow tab strip keeps active middle tab visible", () => {
 	state.activeTabIndex = 2;
 
 	const lines = renderAskScreen({
+		config: DEFAULT_ASK_CONFIG,
 		state,
 		theme: plainTheme(),
 		width: 28,
@@ -133,6 +136,7 @@ test("narrow tab strip keeps submit tab visible when active", () => {
 	state.view = { kind: "submit" };
 
 	const lines = renderAskScreen({
+		config: DEFAULT_ASK_CONFIG,
 		state,
 		theme: plainTheme(),
 		width: 24,
@@ -190,6 +194,7 @@ test("tab strip avoids truncation at narrow boundary widths", () => {
 
 	for (const [width, expected] of expectedByWidth) {
 		const lines = renderAskScreen({
+			config: DEFAULT_ASK_CONFIG,
 			state,
 			theme: plainTheme(),
 			width,
@@ -213,6 +218,7 @@ test("footer hints wrap into exact lines on narrow screens", () => {
 	});
 
 	const lines = renderAskScreen({
+		config: DEFAULT_ASK_CONFIG,
 		state,
 		theme: plainTheme(),
 		width: 26,
@@ -223,7 +229,7 @@ test("footer hints wrap into exact lines on narrow screens", () => {
 		"Space toggle",
 		"Enter continue",
 		"N/Shift+N note",
-		"Esc dismiss · ? help",
+		"Esc dismiss · ? settings",
 	]);
 });
 
@@ -240,16 +246,18 @@ test("footer keeps earlier hint chunk on the first wrapped line", () => {
 	});
 
 	const lines = renderAskScreen({
+		config: DEFAULT_ASK_CONFIG,
 		state,
 		theme: plainTheme(),
 		width: 22,
 		editor: mockEditor(),
 	});
 
-	assert.equal(lines.at(-5), " ⇆ tab · ↑↓ select");
-	assert.deepEqual(lines.slice(-4, -1), [
+	assert.equal(lines.at(-6), " ⇆ tab · ↑↓ select");
+	assert.deepEqual(lines.slice(-5, -1), [
 		"Enter confirm",
 		"N/Shift+N note",
-		"Esc dismiss · ? help",
+		"Esc dismiss",
+		"? settings",
 	]);
 });

@@ -28,11 +28,20 @@ The codebase is split so the implementation reads through file boundaries and na
 - `src/state/view.ts` — view-mode helpers
 - `src/state.ts` — state barrel used by UI and tests
 
+### Config
+
+- `src/config/defaults.ts` — canonical runtime defaults
+- `src/config/schema.ts` — persisted config schema and runtime type
+- `src/config/migrate.ts` — persisted-file validation/migration boundary, including keymap normalization/fallback
+- `src/config/store.ts` — load/save/backup/runtime subscription store
+
 ### UI
 
-- `src/ui/controller.ts` — connects key input, editor lifecycle, and pure state transitions
-- `src/ui/input.ts` — raw input to commands
-- `src/ui/render.ts` and `src/ui/render-*.ts` — screen rendering
+- `src/ui/controller.ts` — connects key input, editor lifecycle, live config subscription, and pure state transitions
+- `src/ui/input.ts` — raw input to commands using resolved config-backed keymaps
+- `src/ui/render.ts` and `src/ui/render-*.ts` — screen rendering, including config-backed footer/keymap hints
+- `src/ui/settings-state.ts` — pure settings-modal draft/dirty/notice state
+- `src/ui/settings-modal.ts` / `src/ui/show-settings-modal.ts` — ask settings modal rendering and launcher
 - `src/ui/constants.ts` and `src/ui/render-types.ts` — rendering constants/contracts
 - `src/ask-component.ts` — thin custom UI export
 
@@ -59,6 +68,10 @@ The codebase is split so the implementation reads through file boundaries and na
 - deselected option notes stay in UI state
 - only selected option notes are emitted in the final result
 - editor lifecycle stays in the controller, not in the reducers
+- persisted ask settings are versioned and normalized before use
+- invalid persisted keymaps fall back to default keymaps for the current session without discarding valid behaviour settings
+- settings modal edits a local draft and only persists on explicit save
+- live config updates can affect an in-progress ask flow immediately
 
 ## Documentation rule
 

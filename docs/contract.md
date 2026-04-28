@@ -199,8 +199,12 @@ This document defines the stable external behavior. It does not explain internal
 - on the review tab, `Submit` and `Cancel` preview notes only for answered questions
 - on the review tab, `Elaborate` preview expands to all question notes and all option notes, including notes on unselected options
 - transcript-friendly call and result rendering
-- ask settings modal with `Keymaps` and `Behaviour` tabs; `Behaviour` may be empty while unimplemented
-- `/ask-settings` opens the same ask settings modal as `?`
+- ask settings modal with `Keymaps` and `Behaviour` tabs
+- `?` in the ask flow and `/ask-settings` in pi open the same ask settings modal
+- `Behaviour` exposes `Auto-submit when answered without notes` as a persisted user setting
+- `Keymaps` is a persisted config section for `cancel`, `dismiss`, `toggle`, `confirm`, `optionNote`, and `questionNote`
+- the `Keymaps` tab is read-only and shows the active bindings plus the config file path
+- if the flow is already on the review tab, all questions are answered, and no notes exist, enabling auto-submit can complete the current ask flow immediately
 - elaborate results are phrased as direct follow-up instructions, for example: `User asked to elaborate on question "Which option would you like to select?" option "Option A" with note "why this one?"`
 
 ## Keyboard behavior
@@ -208,31 +212,30 @@ This document defines the stable external behavior. It does not explain internal
 Main flow:
 
 - `?`: open the ask settings modal on the `Keymaps` tab
+- inside the ask settings modal, `Esc`, `Ctrl+C`, and `?` close it; dirty drafts require a second close action within a short window to discard unsaved changes
 - `Tab`, `Shift+Tab`, `Left`, `Right`: move between tabs
 - `Up`, `Down`: move between options
-- `Enter`: confirm or submit
-- `Esc`: cancel the flow
-- `Ctrl+C`: dismiss the entire flow immediately, even while editing a note or free-form answer
 - `1..9`: select or toggle the matching option; on the review tab, `1`, `2`, and `3` trigger `Submit`, `Elaborate`, and `Cancel`
-- `Space`: toggle the active option
-- `n`: edit the active option note
-- `Shift+N`: edit the current question note
+- the following actions are configurable via persisted `keymaps`: `Enter` by default confirms or submits, `Esc` cancels, `Ctrl+C` dismisses, `Space` toggles, `n` edits the active option note, and `Shift+N` edits the current question note
 
 Editing flow:
 
-- `Enter`: submit the current editor input and close the editor; in note editors this saves the note only and keeps the ask flow open
-- `Esc`: save draft and close the editor
-- `Ctrl+C`: dismiss the entire flow immediately without saving the current editor draft
+- the configurable `confirm` binding submits the current editor input and closes the editor; in note editors this saves the note only and keeps the ask flow open
+- the configurable `cancel` binding saves draft and closes the editor
+- the configurable `dismiss` binding dismisses the entire flow immediately without saving the current editor draft
 - `?`: open the ask settings modal on the `Keymaps` tab when the editor is empty; otherwise enter `?` as text
+- inside the ask settings modal, `Ctrl+S` saves the current draft config without closing the modal
 - when editor has text, arrow keys and `Tab` stay in the editor so the cursor can move while typing
-- when editor is empty, `Up`/`Down` move options and `Tab`/`Shift+Tab`/`Left`/`Right` move between tabs without requiring `Esc` first
-- navigation resumes only after closing the editor with `Esc`, unless the editor is empty and the navigation keys above are used
+- when editor is empty, `Up`/`Down` move options and `Tab`/`Shift+Tab`/`Left`/`Right` move between tabs without requiring the configurable cancel key first
+- navigation resumes only after closing the editor with the configurable `cancel` binding, unless the editor is empty and the navigation keys above are used
 
 ## Non-interactive mode
 
 If `ctx.hasUI === false`, the tool returns a `Needs user input` message in `content` and a cancelled result in `details`.
 
 Validation is handled inside the tool so malformed calls produce the same structured error shape as other invalid payloads instead of relying on pre-execution schema failures.
+
+The ask flow subscribes to runtime settings updates while open. In practice, this means changing `Auto-submit when answered without notes` or reloading config-backed keymaps can affect the in-progress ask flow immediately instead of only future asks.
 
 The fallback message includes normalized pending questions and options so the caller can re-ask them manually. `details.questions` still contains normalized question metadata, while `details.answers` stays empty until a user responds.
 

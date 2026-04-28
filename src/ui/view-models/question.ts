@@ -127,27 +127,26 @@ function buildOptionDetailModel(
 	const note = option.isCustomOption
 		? undefined
 		: getOptionNote(state, question.id, option.value);
-	const withGap = !option.isCustomOption;
 
 	if (noteOpen) {
 		return {
 			kind: "editor",
 			placeholder: UI_TEXT.editorPlaceholderNote,
-			withGap,
+			withGap: false,
 		};
 	}
 	if (inputOpen) {
 		return {
 			kind: "editor",
 			placeholder: UI_TEXT.editorPlaceholderInput,
-			withGap,
+			withGap: false,
 		};
 	}
 	if (customText) {
-		return { kind: "custom-text", text: customText, withGap };
+		return { kind: "custom-text", text: customText, withGap: false };
 	}
 	if (note) {
-		return { kind: "saved-note", text: note, withGap };
+		return { kind: "saved-note", text: note, withGap: false };
 	}
 	return;
 }

@@ -1,4 +1,5 @@
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import type { AskConfig } from "../config/schema.ts";
 import {
 	getCurrentQuestion,
 	isQuestionAnswered,
@@ -28,14 +29,15 @@ export function renderFrameHeader(args: {
 }
 
 export function renderFrameFooter(args: {
+	config: AskConfig;
 	lines: string[];
 	state: AskState;
 	theme: Theme;
 	width: number;
 }) {
-	const { lines, state, theme, width } = args;
+	const { config, lines, state, theme, width } = args;
 	const add = (text = "") => lines.push(truncateToWidth(text, width));
-	const footer = renderFooter(state, width);
+	const footer = renderFooter(config, state, width);
 	if (footer.length > 0) {
 		add();
 		for (const line of footer) {
@@ -178,17 +180,24 @@ function applyTabGrowth(
 	range.end = nextIndex;
 }
 
-function renderFooter(state: AskState, width: number): string[] {
+function renderFooter(
+	config: AskConfig,
+	state: AskState,
+	width: number
+): string[] {
 	let footer: string;
 	if (state.view.kind === "input") {
-		footer = renderFooterText("input");
+		footer = renderFooterText(config, "input");
 	} else if (state.view.kind === "note") {
-		footer = renderFooterText("note");
+		footer = renderFooterText(config, "note");
 	} else if (isSubmitTab(state)) {
-		footer = renderFooterText("submit");
+		footer = renderFooterText(config, "submit");
 	} else {
 		const question = getCurrentQuestion(state);
-		footer = renderFooterText(question?.type === "multi" ? "multi" : "default");
+		footer = renderFooterText(
+			config,
+			question?.type === "multi" ? "multi" : "default"
+		);
 	}
 	return wrapDelimitedFooterHints(footer, width);
 }

@@ -1,5 +1,6 @@
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import type { AskConfig } from "../config/schema.ts";
 import {
 	type FooterKeymapContext,
 	renderFooterKeymaps,
@@ -372,8 +373,11 @@ export function pushSavedNote(args: {
 	);
 }
 
-export function renderFooterText(mode: FooterKeymapContext): string {
-	return renderFooterKeymaps(mode);
+export function renderFooterText(
+	config: AskConfig,
+	mode: FooterKeymapContext
+): string {
+	return renderFooterKeymaps(config, mode);
 }
 
 function padToVisibleWidth(text: string, width: number): string {

@@ -4,6 +4,7 @@ import { createInitialState } from "../src/state/create.ts";
 import { getRenderableOptions } from "../src/state/selectors.ts";
 import {
 	applyNumberShortcut,
+	enterOptionNoteMode,
 	enterQuestionNoteMode,
 } from "../src/state/transitions.ts";
 import { renderQuestionScreen } from "../src/ui/render-question.ts";
@@ -119,6 +120,39 @@ test("open question note renders inline label and editor", () => {
 	assert.notEqual(promptIndex, -1);
 	assert.equal(inputIndex, promptIndex + 1);
 	assert(!lines.some((line) => line.includes("Note:")));
+});
+
+test("open option note renders flush below the option", () => {
+	const state = enterOptionNoteMode(
+		createInitialState({
+			questions: [
+				{
+					id: "q1",
+					prompt: "Pick one",
+					options: [{ value: "a", label: "Option A" }],
+				},
+			],
+		}),
+		"q1",
+		"a"
+	);
+
+	const lines: string[] = [];
+	renderQuestionScreen({
+		editor: mockEditor("", ["┌────┐", "", "└────┘"]),
+		lines,
+		options: getRenderableOptions(state.questions[0]),
+		question: state.questions[0],
+		state,
+		theme: mockTheme(),
+		width: 80,
+	});
+
+	const optionIndex = lines.findIndex((line) => line.includes("Option A"));
+	const inputIndex = lines.findIndex((line) => line.includes("Add a note..."));
+
+	assert.notEqual(optionIndex, -1);
+	assert.equal(inputIndex, optionIndex + 1);
 });
 
 test("selected multiline custom option renders full editor block", () => {

@@ -1,3 +1,4 @@
+import type { AskConfig } from "../config/schema.ts";
 import {
 	getCurrentQuestion,
 	getRenderableOptions,
@@ -10,12 +11,13 @@ import { renderSubmitScreen } from "./render-submit.ts";
 import type { QuestionRenderContext, Theme } from "./render-types.ts";
 
 export function renderAskScreen(args: {
+	config: AskConfig;
 	state: AskState;
 	theme: Theme;
 	width: number;
 	editor: QuestionRenderContext["editor"];
 }): string[] {
-	const { state, theme, width, editor } = args;
+	const { config, state, theme, width, editor } = args;
 	const lines: string[] = [];
 	const question = getCurrentQuestion(state);
 	const options = getRenderableOptions(question);
@@ -36,6 +38,6 @@ export function renderAskScreen(args: {
 		});
 	}
 
-	renderFrameFooter({ lines, state, theme, width });
+	renderFrameFooter({ config, lines, state, theme, width });
 	return lines;
 }

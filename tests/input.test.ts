@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { DEFAULT_ASK_CONFIG } from "../src/config/defaults.ts";
 import { createInitialState } from "../src/state/create.ts";
 import {
 	applyNumberShortcut,
@@ -24,27 +25,27 @@ function inputState() {
 test("empty typing mode uses arrows and tab for navigation", () => {
 	const input = inputState();
 
-	assert.deepEqual(getInputCommand(input, "\x1b[A", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[A", ""), {
 		kind: "editMoveOption",
 		delta: -1,
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[B", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[B", ""), {
 		kind: "editMoveOption",
 		delta: 1,
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[C", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[C", ""), {
 		kind: "editMoveTab",
 		delta: 1,
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[D", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[D", ""), {
 		kind: "editMoveTab",
 		delta: -1,
 	});
-	assert.deepEqual(getInputCommand(input, "\t", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\t", ""), {
 		kind: "editMoveTab",
 		delta: 1,
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[Z", ""), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[Z", ""), {
 		kind: "editMoveTab",
 		delta: -1,
 	});
@@ -53,22 +54,22 @@ test("empty typing mode uses arrows and tab for navigation", () => {
 test("non-empty typing mode keeps arrows and tab in editor", () => {
 	const input = inputState();
 
-	assert.deepEqual(getInputCommand(input, "\x1b[A", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[A", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[B", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[B", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[C", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[C", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[D", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[D", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(input, "\t", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\t", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(input, "\x1b[Z", "x"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\x1b[Z", "x"), {
 		kind: "delegateToEditor",
 	});
 });
@@ -87,23 +88,23 @@ test("empty note editing mode uses arrows and tab for navigation", () => {
 		"q1"
 	);
 
-	assert.deepEqual(getInputCommand(state, "\x1b[A", ""), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[A", ""), {
 		kind: "editMoveOption",
 		delta: -1,
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[B", ""), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[B", ""), {
 		kind: "editMoveOption",
 		delta: 1,
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[C", ""), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[C", ""), {
 		kind: "editMoveTab",
 		delta: 1,
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[D", ""), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[D", ""), {
 		kind: "editMoveTab",
 		delta: -1,
 	});
-	assert.deepEqual(getInputCommand(state, "\t", ""), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\t", ""), {
 		kind: "editMoveTab",
 		delta: 1,
 	});
@@ -123,19 +124,19 @@ test("non-empty note editing mode keeps arrows and tab in editor", () => {
 		"q1"
 	);
 
-	assert.deepEqual(getInputCommand(state, "\x1b[A", "x"), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[A", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[B", "x"), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[B", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[C", "x"), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[C", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(state, "\x1b[D", "x"), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\x1b[D", "x"), {
 		kind: "delegateToEditor",
 	});
-	assert.deepEqual(getInputCommand(state, "\t", "x"), {
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "\t", "x"), {
 		kind: "delegateToEditor",
 	});
 });
@@ -153,18 +154,18 @@ test("ctrl+c dismisses the flow from both navigation and editing modes", () => {
 	const input = inputState();
 	const note = enterQuestionNoteMode(navigation, "q1");
 
-	assert.deepEqual(getInputCommand(navigation, "\u0003"), {
+	assert.deepEqual(getInputCommand(navigation, DEFAULT_ASK_CONFIG, "\u0003"), {
 		kind: "dismiss",
 	});
-	assert.deepEqual(getInputCommand(input, "\u0003"), {
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "\u0003"), {
 		kind: "dismiss",
 	});
-	assert.deepEqual(getInputCommand(note, "\u0003"), {
+	assert.deepEqual(getInputCommand(note, DEFAULT_ASK_CONFIG, "\u0003"), {
 		kind: "dismiss",
 	});
 });
 
-test("question mark opens keymap help outside non-empty editors", () => {
+test("question mark opens ask settings outside non-empty editors", () => {
 	const navigation = createInitialState({
 		questions: [
 			{
@@ -176,9 +177,13 @@ test("question mark opens keymap help outside non-empty editors", () => {
 	});
 	const input = inputState();
 
-	assert.deepEqual(getInputCommand(navigation, "?"), { kind: "showHelp" });
-	assert.deepEqual(getInputCommand(input, "?", ""), { kind: "showHelp" });
-	assert.deepEqual(getInputCommand(input, "?", "x"), {
+	assert.deepEqual(getInputCommand(navigation, DEFAULT_ASK_CONFIG, "?"), {
+		kind: "showSettings",
+	});
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "?", ""), {
+		kind: "showSettings",
+	});
+	assert.deepEqual(getInputCommand(input, DEFAULT_ASK_CONFIG, "?", "x"), {
 		kind: "delegateToEditor",
 	});
 });
@@ -194,10 +199,37 @@ test("note shortcuts use n for option notes and Shift+N for question notes", () 
 		],
 	});
 
-	assert.deepEqual(getInputCommand(navigation, "n"), {
+	assert.deepEqual(getInputCommand(navigation, DEFAULT_ASK_CONFIG, "n"), {
 		kind: "openOptionNote",
 	});
-	assert.deepEqual(getInputCommand(navigation, "N"), {
+	assert.deepEqual(getInputCommand(navigation, DEFAULT_ASK_CONFIG, "N"), {
+		kind: "openQuestionNote",
+	});
+});
+
+test("custom configured note shortcuts are used at runtime", () => {
+	const navigation = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Question?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+	const config = {
+		...DEFAULT_ASK_CONFIG,
+		keymaps: {
+			...DEFAULT_ASK_CONFIG.keymaps,
+			optionNote: "x",
+			questionNote: "shift+x",
+		},
+	};
+
+	assert.deepEqual(getInputCommand(navigation, config, "x"), {
+		kind: "openOptionNote",
+	});
+	assert.deepEqual(getInputCommand(navigation, config, "X"), {
 		kind: "openQuestionNote",
 	});
 });

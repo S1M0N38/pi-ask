@@ -1,5 +1,7 @@
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { Editor, type EditorTheme } from "@mariozechner/pi-tui";
+import type { AskConfig } from "../config/schema.ts";
+import { getAskConfigStore } from "../config/store.ts";
 import { createInitialState } from "../state/create.ts";
 import {
 	getEditorDraft,
@@ -26,6 +28,7 @@ import {
 } from "../state/transitions.ts";
 import { isEditingView } from "../state/view.ts";
 import type { AskParams, AskResult, AskState } from "../types.ts";
+import { maybeAutoSubmitState } from "./auto-submit.ts";
 import { createAskAutocompleteProvider } from "./autocomplete.ts";
 import type { AskInputCommand } from "./input.ts";
 import { getInputCommand } from "./input.ts";
@@ -41,25 +44,29 @@ type Theme = CustomCallbackArgs[1];
 type Keybindings = CustomCallbackArgs[2];
 type Done = (result: AskResult) => void;
 type AskFlowParams = AskParams &
-	Pick<ExtensionContext, "cwd"> & { ctx: ExtensionContext };
+	Pick<ExtensionContext, "cwd"> & { config: AskConfig; ctx: ExtensionContext };
 
 interface AskFlowController {
+	config: AskConfig;
 	ctx: ExtensionContext;
 	done: Done;
 	editor: Editor;
-	helpOpen: boolean;
+	settingsOpen: boolean;
 	state: AskState;
 	suppressAutoInputForSelection: boolean;
 	theme: Theme;
 	tui: Tui;
+	unsubscribeConfig: () => void;
 }
 
-export function runAskFlow(
+export async function runAskFlow(
 	ctx: ExtensionContext,
 	params: AskParams
 ): Promise<AskResult> {
+	const store = getAskConfigStore();
+	const config = await store.getConfig();
 	return ctx.ui.custom<AskResult>((...args) =>
-		createAskFlowController(args, { ...params, cwd: ctx.cwd, ctx })
+		createAskFlowController(args, { ...params, config, cwd: ctx.cwd, ctx })
 	);
 }
 
@@ -73,15 +80,29 @@ function createAskFlowController(
 	params: AskFlowParams
 ) {
 	const controller: AskFlowController = {
+		config: params.config,
 		ctx: params.ctx,
 		done,
 		editor: createEditor(tui, theme, params.cwd),
-		helpOpen: false,
+		settingsOpen: false,
 		state: createInitialState(params),
 		suppressAutoInputForSelection: false,
 		theme,
 		tui,
+		unsubscribeConfig: () => {
+			// replaced immediately after controller creation
+		},
 	};
+
+	controller.unsubscribeConfig = getAskConfigStore().subscribe((config) => {
+		controller.config = config;
+		controller.state = maybeAutoSubmitState(
+			controller.state,
+			controller.config
+		);
+		refresh(controller);
+		maybeFinish(controller);
+	});
 
 	controller.editor.onSubmit = (value) => submitEditor(controller, value);
 	syncSelection(controller);
@@ -94,6 +115,9 @@ function createAskFlowController(
 		handleInput(data: string) {
 			handleControllerInput(controller, data);
 		},
+		dispose() {
+			controller.unsubscribeConfig();
+		},
 	};
 }
 
@@ -102,6 +126,7 @@ function renderController(
 	width: number
 ): string[] {
 	return renderAskScreen({
+		config: controller.config,
 		editor: controller.editor,
 		state: controller.state,
 		theme: controller.theme,
@@ -112,6 +137,7 @@ function renderController(
 function handleControllerInput(controller: AskFlowController, data: string) {
 	const command = getInputCommand(
 		controller.state,
+		controller.config,
 		data,
 		isEditingView(controller.state) ? controller.editor.getText() : ""
 	);
@@ -131,8 +157,8 @@ function handleEditingCommand(
 		commitState(controller, dismissFlow(controller.state), { finish: true });
 		return;
 	}
-	if (command.kind === "showHelp") {
-		showHelpModal(controller);
+	if (command.kind === "showSettings") {
+		showSettingsModal(controller);
 		return;
 	}
 	if (command.kind === "editMoveTab") {
@@ -190,8 +216,8 @@ function handleNavigationCommand(
 		case "dismiss":
 			commitState(controller, dismissFlow(controller.state), { finish: true });
 			return;
-		case "showHelp":
-			showHelpModal(controller);
+		case "showSettings":
+			showSettingsModal(controller);
 			return;
 		case "ignore":
 		case "editMoveTab":
@@ -253,6 +279,7 @@ function commitState(
 	if (options.syncSelection !== false) {
 		syncSelection(controller);
 	}
+	controller.state = maybeAutoSubmitState(controller.state, controller.config);
 	hydrateEditor(controller);
 	refresh(controller);
 	if (options.finish) {
@@ -262,7 +289,10 @@ function commitState(
 
 function submitEditor(controller: AskFlowController, value: string) {
 	controller.suppressAutoInputForSelection = false;
-	controller.state = submitEditorDraft(controller.state, value);
+	controller.state = maybeAutoSubmitState(
+		submitEditorDraft(controller.state, value),
+		controller.config
+	);
 	controller.editor.setText("");
 	refresh(controller);
 	maybeFinish(controller);
@@ -283,13 +313,13 @@ function closeEditor(controller: AskFlowController) {
 	refresh(controller);
 }
 
-function showHelpModal(controller: AskFlowController) {
-	if (controller.helpOpen) {
+function showSettingsModal(controller: AskFlowController) {
+	if (controller.settingsOpen) {
 		return;
 	}
-	controller.helpOpen = true;
+	controller.settingsOpen = true;
 	showAskSettingsModal(controller.ctx.ui).finally(() => {
-		controller.helpOpen = false;
+		controller.settingsOpen = false;
 		refresh(controller);
 	});
 }

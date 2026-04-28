@@ -1,5 +1,6 @@
+import type { AskConfig } from "../config/schema.ts";
 import {
-	ASK_KEY_BINDINGS,
+	getAskKeyBindings,
 	matchesBinding,
 	matchesDigitShortcut,
 } from "../constants/keymaps.ts";
@@ -14,7 +15,7 @@ export type AskInputCommand =
 	| { kind: "confirm" }
 	| { kind: "cancel" }
 	| { kind: "dismiss" }
-	| { kind: "showHelp" }
+	| { kind: "showSettings" }
 	| { kind: "numberShortcut"; digit: number }
 	| { kind: "editMoveTab"; delta: 1 | -1 }
 	| { kind: "editMoveOption"; delta: 1 | -1 }
@@ -24,85 +25,79 @@ export type AskInputCommand =
 
 export function getInputCommand(
 	state: AskState,
+	config: AskConfig,
 	data: string,
 	editingText = ""
 ): AskInputCommand {
-	if (matchesBinding(data, ASK_KEY_BINDINGS.dismiss)) {
+	const bindings = getAskKeyBindings(config);
+	if (matchesBinding(data, bindings.dismiss)) {
 		return { kind: "dismiss" };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.help) && editingText.length === 0) {
-		return { kind: "showHelp" };
+	if (matchesBinding(data, bindings.settings) && editingText.length === 0) {
+		return { kind: "showSettings" };
 	}
 
 	if (state.view.kind === "input" || state.view.kind === "note") {
-		return getEditingInputCommand(data, editingText);
+		return getEditingInputCommand(bindings, data, editingText);
 	}
 
-	return getNavigationInputCommand(data);
-}
-
-export function formatKeybindingLabel(key: string): string {
-	return key
-		.split("+")
-		.map((part) => {
-			if (part.length <= 1) {
-				return part.toUpperCase();
-			}
-			return part.charAt(0).toUpperCase() + part.slice(1);
-		})
-		.join("+");
+	return getNavigationInputCommand(bindings, data);
 }
 
 function getEditingInputCommand(
+	bindings: ReturnType<typeof getAskKeyBindings>,
 	data: string,
 	editingText: string
 ): AskInputCommand {
-	if (matchesBinding(data, ASK_KEY_BINDINGS.cancel)) {
+	if (matchesBinding(data, bindings.cancel)) {
 		return { kind: "editClose" };
 	}
 	if (editingText.length === 0) {
-		if (matchesBinding(data, ASK_KEY_BINDINGS.nextTab)) {
+		if (matchesBinding(data, bindings.nextTab)) {
 			return { kind: "editMoveTab", delta: 1 };
 		}
-		if (matchesBinding(data, ASK_KEY_BINDINGS.previousTab)) {
+		if (matchesBinding(data, bindings.previousTab)) {
 			return { kind: "editMoveTab", delta: -1 };
 		}
-		if (matchesBinding(data, ASK_KEY_BINDINGS.previousOption)) {
+		if (matchesBinding(data, bindings.previousOption)) {
 			return { kind: "editMoveOption", delta: -1 };
 		}
-		if (matchesBinding(data, ASK_KEY_BINDINGS.nextOption)) {
+		if (matchesBinding(data, bindings.nextOption)) {
 			return { kind: "editMoveOption", delta: 1 };
 		}
 	}
 	return { kind: "delegateToEditor" };
 }
 
-function getNavigationInputCommand(data: string): AskInputCommand {
-	if (matchesBinding(data, ASK_KEY_BINDINGS.nextTab)) {
+function getNavigationInputCommand(
+	bindings: ReturnType<typeof getAskKeyBindings>,
+	data: string
+): AskInputCommand {
+	if (matchesBinding(data, bindings.nextTab)) {
 		return { kind: "moveTab", delta: 1 };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.previousTab)) {
+	if (matchesBinding(data, bindings.previousTab)) {
 		return { kind: "moveTab", delta: -1 };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.previousOption)) {
+	if (matchesBinding(data, bindings.previousOption)) {
 		return { kind: "moveOption", delta: -1 };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.nextOption)) {
+	if (matchesBinding(data, bindings.nextOption)) {
 		return { kind: "moveOption", delta: 1 };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.toggle)) {
+	if (matchesBinding(data, bindings.toggle)) {
 		return { kind: "toggleMulti" };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.confirm)) {
+	if (matchesBinding(data, bindings.confirm)) {
 		return { kind: "confirm" };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.cancel)) {
+	if (matchesBinding(data, bindings.cancel)) {
 		return { kind: "cancel" };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.questionNote)) {
+	if (matchesBinding(data, bindings.questionNote)) {
 		return { kind: "openQuestionNote" };
 	}
-	if (matchesBinding(data, ASK_KEY_BINDINGS.optionNote)) {
+	if (matchesBinding(data, bindings.optionNote)) {
 		return { kind: "openOptionNote" };
 	}
 

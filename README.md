@@ -35,7 +35,9 @@ Once installed, this package gives the agent a native way to ask for clarificati
 - 📝 Question-level and option-level notes
 - 👀 Review tab with `Submit`, `Elaborate`, and `Cancel`
 - 💬 Elaboration flow to capture note-based clarification before final submission
-- ⌨️ Fast keyboard-first interaction (also mobile-friendly in remote sessions)
+- ⌨️ Fast keyboard-first interaction with customizable ask keymaps (also mobile-friendly in remote sessions)
+- ⚙️ Ask settings with persisted behaviour and keymap customization via config
+- 🗣️ You can talk to your agent to configure pi-ask; it will read the bundled configuration guide and tailor the config for you
 
 ## Feature walkthrough
 
@@ -89,7 +91,22 @@ Ask the agent to elaborate on notes before finalizing choices.
 
 ![Review tab with Elaborate action and expanded note preview](docs/media/feature-review-elaborate.png)
 
-## Key bindings
+## Default key bindings
+
+Open the ask settings modal with `?` during the ask flow, or with the `/ask-settings` command from pi.
+
+Customizable via config:
+
+| Action | Default key |
+|---|---|
+| Cancel flow or close/save editor draft | `Esc` |
+| Dismiss entire ask flow immediately | `Ctrl+C` |
+| Toggle selected option | `Space` |
+| Confirm / continue / save / submit | `Enter` |
+| Edit selected option note | `n` |
+| Edit question note | `Shift+N` |
+
+Fixed bindings:
 
 | Key                         | Context                                 | Effect                                      |
 |-----------------------------|-----------------------------------------|---------------------------------------------|
@@ -98,27 +115,42 @@ Ask the agent to elaborate on notes before finalizing choices.
 | `←` `→`                     | Main flow                               | Switch tabs                                 |
 | `↑` `↓`                     | Main flow                               | Move cursor                                 |
 | `1..9`                      | Options list                            | Select or toggle matching option            |
-| `Space`                     | Single- or multi-select option          | Toggle selection                            |
-| `Enter`                     | Single-select option                    | Confirm and continue                        |
-| `Enter`                     | Multi-select option                     | Continue                                    |
-| `n`                         | Active option                           | Edit option note                            |
-| `Shift+N`                   | Current question                        | Edit question note                          |
 | `1` `2` `3`                 | Review tab                              | Trigger `Submit` / `Elaborate` / `Cancel`   |
 | `↑` `↓`                     | Review tab                              | Change highlighted review action            |
-| `Enter`                     | Review tab                              | Confirm highlighted review action           |
-| `Enter`                     | Free-form answer editor                 | Save and submit current input               |
-| `Enter`                     | Note editor                             | Save current note and return to navigation  |
-| `Esc`                       | Free-form or note editor                | Save draft and close editor                 |
-| `Ctrl+C`                    | Anywhere                                | Dismiss entire ask flow immediately         |
 | `↑` `↓`                     | Empty editor                            | Move options without closing editor         |
 | `Tab` `Shift+Tab` / `←` `→` | Empty editor                            | Switch tabs without closing editor          |
 | Arrow keys / `Tab`          | Non-empty editor                        | Stay in editor for cursor movement          |
+
+Config file: `~/.pi/.../extensions/eko24ive-pi-ask.json`
+
+You can edit this file yourself, ask pi to edit it for you, or use the read-only `Keymaps` tab to find the exact path and active bindings.
+
+```json
+{
+  "schemaVersion": 1,
+  "behaviour": {
+    "autoSubmitWhenAnsweredWithoutNotes": false
+  },
+  "keymaps": {
+    "cancel": "esc",
+    "dismiss": "ctrl+c",
+    "toggle": "space",
+    "confirm": "enter",
+    "optionNote": "n",
+    "questionNote": "shift+n"
+  }
+}
+```
+
+Accepted notation follows pi-tui key ids. Common aliases are normalized, for example `escape` → `esc`, `return` → `enter`, `control+c` → `ctrl+c`, and `Shift+N` → `shift+n`.
 
 ## Use
 
 After installation, the extension registers the `ask_user` tool and `/ask-settings` command.
 
-Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. `/ask-settings` opens the same modal used by `?`, with `Keymaps` and `Behaviour` tabs.
+Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. The ask settings modal is available both from `?` in the ask flow and from the `/ask-settings` command, with `Keymaps` and `Behaviour` tabs. `Keymaps` is read-only and shows the active resolved bindings plus the config file path. Behaviour settings are saved explicitly with `Ctrl+S`.
+
+You can also talk to pi to configure this extension. When asked to customize pi-ask settings or keymaps, the agent is instructed to read the bundled `docs/configuration.md` guide first and then edit the config file accordingly.
 
 This package also bundles the `ask-user` skill profile from `skills/ask-user/SKILL.md`. It reinforces when to use the tool, is enabled by default when installed, and can be disabled via `pi config`. The skill was inspired by https://github.com/edlsh/pi-ask-user.
 

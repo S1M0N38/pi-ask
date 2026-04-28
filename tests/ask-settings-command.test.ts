@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { registerAskSettingsCommand } from "../src/ask-settings-command.ts";
 
@@ -14,6 +17,9 @@ function plainTheme() {
 }
 
 test("registers /ask-settings and opens the shared modal overlay", async () => {
+	const agentDir = await mkdtemp(join(tmpdir(), "pi-ask-command-"));
+	process.env.PI_CODING_AGENT_DIR = agentDir;
+
 	const commands = new Map<
 		string,
 		{ handler: (args: string, ctx: any) => Promise<void> }
@@ -36,7 +42,12 @@ test("registers /ask-settings and opens the shared modal overlay", async () => {
 				const done = () => {
 					// test callback intentionally unused
 				};
-				const component = callback(undefined, plainTheme(), undefined, done);
+				const tui = {
+					requestRender() {
+						// test render hook intentionally unused
+					},
+				};
+				const component = callback(tui, plainTheme(), undefined, done);
 				customCalls.push({ options, lines: component.render(72) });
 				return Promise.resolve();
 			},
@@ -55,4 +66,7 @@ test("registers /ask-settings and opens the shared modal overlay", async () => {
 		},
 	});
 	assert(customCalls[0]?.lines.join("\n").includes("Keymaps"));
+
+	delete process.env.PI_CODING_AGENT_DIR;
+	await rm(agentDir, { force: true, recursive: true });
 });
