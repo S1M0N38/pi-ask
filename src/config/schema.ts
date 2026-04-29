@@ -7,6 +7,7 @@ export const AskConfigFileV1Schema = Type.Object({
 		Type.Object({
 			autoSubmitWhenAnsweredWithoutNotes: Type.Optional(Type.Boolean()),
 			confirmDismissWhenDirty: Type.Optional(Type.Boolean()),
+			doublePressReviewShortcuts: Type.Optional(Type.Boolean()),
 			showFooterHints: Type.Optional(Type.Boolean()),
 		})
 	),
@@ -37,6 +38,7 @@ export interface AskConfig {
 	behaviour: {
 		autoSubmitWhenAnsweredWithoutNotes: boolean;
 		confirmDismissWhenDirty: boolean;
+		doublePressReviewShortcuts: boolean;
 		showFooterHints: boolean;
 	};
 	keymaps: AskConfigKeymaps;

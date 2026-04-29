@@ -13,12 +13,21 @@ import type { QuestionRenderContext, Theme } from "./render-types.ts";
 export function renderAskScreen(args: {
 	config: AskConfig;
 	footerNotice?: string;
+	reviewShortcutHint?: string;
 	state: AskState;
 	theme: Theme;
 	width: number;
 	editor: QuestionRenderContext["editor"];
 }): string[] {
-	const { config, footerNotice, state, theme, width, editor } = args;
+	const {
+		config,
+		footerNotice,
+		reviewShortcutHint,
+		state,
+		theme,
+		width,
+		editor,
+	} = args;
 	const lines: string[] = [];
 	const question = getCurrentQuestion(state);
 	const options = getRenderableOptions(question);
@@ -26,7 +35,7 @@ export function renderAskScreen(args: {
 	renderFrameHeader({ lines, state, theme, width });
 
 	if (isSubmitTab(state)) {
-		renderSubmitScreen(lines, state, theme, width);
+		renderSubmitScreen(lines, state, theme, width, reviewShortcutHint);
 	} else if (question) {
 		renderQuestionScreen({
 			lines,

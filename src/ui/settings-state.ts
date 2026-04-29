@@ -153,6 +153,8 @@ function deepEqual(left: AskConfig, right: AskConfig): boolean {
 			right.behaviour.autoSubmitWhenAnsweredWithoutNotes &&
 		left.behaviour.confirmDismissWhenDirty ===
 			right.behaviour.confirmDismissWhenDirty &&
+		left.behaviour.doublePressReviewShortcuts ===
+			right.behaviour.doublePressReviewShortcuts &&
 		left.behaviour.showFooterHints === right.behaviour.showFooterHints &&
 		left.keymaps.cancel === right.keymaps.cancel &&
 		left.keymaps.dismiss === right.keymaps.dismiss &&

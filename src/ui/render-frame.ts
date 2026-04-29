@@ -71,13 +71,13 @@ function renderTabs(state: AskState, theme: Theme, width: number): string {
 		};
 	});
 
-	const submitText = " ✔ Submit ";
+	const reviewText = " ☰ Review ";
 	tabs.push({
-		text: submitText,
-		width: visibleWidth(submitText),
+		text: reviewText,
+		width: visibleWidth(reviewText),
 		render: isSubmitTab(state)
-			? theme.bg("selectedBg", theme.fg("text", submitText))
-			: theme.fg("success", submitText),
+			? theme.bg("selectedBg", theme.fg("text", reviewText))
+			: theme.fg("success", reviewText),
 	});
 
 	const activeIndex = Math.min(state.activeTabIndex, tabs.length - 1);

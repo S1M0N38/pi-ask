@@ -38,6 +38,10 @@ import {
 import type { AskInputCommand } from "./input.ts";
 import { getInputCommand } from "./input.ts";
 import { renderAskScreen } from "./render.ts";
+import {
+	getReviewShortcutHint,
+	resolveReviewShortcutDoublePress,
+} from "./review-shortcuts.ts";
 import { showAskSettingsModal } from "./show-settings-modal.ts";
 
 type CustomCallback = Parameters<ExtensionContext["ui"]["custom"]>[0];
@@ -57,6 +61,7 @@ interface AskFlowController {
 	dismissNotice?: string;
 	done: Done;
 	editor: Editor;
+	pendingReviewShortcutActionIndex?: number;
 	settingsOpen: boolean;
 	state: AskState;
 	suppressAutoInputForSelection: boolean;
@@ -94,6 +99,7 @@ function createAskFlowController(
 		settingsOpen: false,
 		state: createInitialState(params),
 		suppressAutoInputForSelection: false,
+		pendingReviewShortcutActionIndex: undefined,
 		theme,
 		tui,
 		unsubscribeConfig: () => {
@@ -136,6 +142,7 @@ function renderController(
 		config: controller.config,
 		editor: controller.editor,
 		footerNotice: getDismissNotice(controller),
+		reviewShortcutHint: getActiveReviewShortcutHint(controller),
 		state: controller.state,
 		theme: controller.theme,
 		width,
@@ -193,12 +200,15 @@ function handleNavigationCommand(
 ) {
 	switch (command.kind) {
 		case "moveTab":
+			clearReviewShortcutPending(controller);
 			commitState(controller, moveTab(controller.state, command.delta));
 			return;
 		case "moveOption":
+			clearReviewShortcutPending(controller);
 			commitState(controller, moveOption(controller.state, command.delta));
 			return;
 		case "toggleMulti":
+			clearReviewShortcutPending(controller);
 			handleToggleCurrentOption(controller);
 			return;
 		case "openQuestionNote":
@@ -208,20 +218,27 @@ function handleNavigationCommand(
 			openOptionNote(controller);
 			return;
 		case "confirm":
+			clearReviewShortcutPending(controller);
 			commitState(controller, confirmCurrentSelection(controller.state), {
 				finish: true,
 			});
 			return;
 		case "cancel":
+			clearReviewShortcutPending(controller);
 			handleExitFlow(controller, cancelFlow(controller.state));
 			return;
 		case "numberShortcut":
+			if (handleReviewShortcutNumber(controller, command.digit)) {
+				return;
+			}
+			clearReviewShortcutPending(controller);
 			commitState(
 				controller,
 				applyNumberShortcut(controller.state, command.digit)
 			);
 			return;
 		case "dismiss":
+			clearReviewShortcutPending(controller);
 			handleExitFlow(controller, dismissFlow(controller.state));
 			return;
 		case "showSettings":
@@ -352,6 +369,56 @@ function shouldRequestDismissConfirmation(
 
 function clearDismissNotice(controller: AskFlowController) {
 	controller.dismissNotice = undefined;
+}
+
+function clearReviewShortcutPending(controller: AskFlowController) {
+	controller.pendingReviewShortcutActionIndex = undefined;
+}
+
+function getActiveReviewShortcutHint(
+	controller: AskFlowController
+): string | undefined {
+	if (
+		!(
+			isSubmitTab(controller.state) &&
+			controller.config.behaviour.doublePressReviewShortcuts
+		)
+	) {
+		return;
+	}
+	return getReviewShortcutHint(controller.pendingReviewShortcutActionIndex);
+}
+
+function handleReviewShortcutNumber(
+	controller: AskFlowController,
+	digit: number
+): boolean {
+	if (
+		!(
+			isSubmitTab(controller.state) &&
+			controller.config.behaviour.doublePressReviewShortcuts
+		)
+	) {
+		return false;
+	}
+
+	const resolution = resolveReviewShortcutDoublePress(
+		digit,
+		controller.pendingReviewShortcutActionIndex
+	);
+	if (resolution.actionIndex === undefined) {
+		return false;
+	}
+
+	controller.pendingReviewShortcutActionIndex = resolution.pendingActionIndex;
+	const nextState = resolution.confirmed
+		? applyNumberShortcut(controller.state, digit)
+		: {
+				...controller.state,
+				activeSubmitActionIndex: resolution.actionIndex,
+			};
+	commitState(controller, nextState, { finish: resolution.confirmed });
+	return true;
 }
 
 function getDismissNotice(controller: AskFlowController): string | undefined {

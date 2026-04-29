@@ -13,7 +13,8 @@ export function renderSubmitScreen(
 	lines: string[],
 	state: AskState,
 	theme: Theme,
-	width: number
+	width: number,
+	reviewShortcutHint?: string
 ) {
 	const model = buildReviewScreenModel(state, width);
 	if (model.layout === "wide") {
@@ -32,6 +33,7 @@ export function renderSubmitScreen(
 		)) {
 			lines.push(line);
 		}
+		appendReviewShortcutHint(lines, reviewShortcutHint, theme, width);
 		return;
 	}
 
@@ -40,6 +42,7 @@ export function renderSubmitScreen(
 	lines.push(...reviewLines);
 	lines.push("");
 	lines.push(...actionLines);
+	appendReviewShortcutHint(lines, reviewShortcutHint, theme, width);
 }
 
 function renderSubmitReviewLines(
@@ -149,4 +152,17 @@ function renderSubmitActions(
 		);
 	}
 	return lines;
+}
+
+function appendReviewShortcutHint(
+	lines: string[],
+	hint: string | undefined,
+	theme: Theme,
+	width: number
+) {
+	if (!hint) {
+		return;
+	}
+	lines.push("");
+	pushWrappedText(lines, hint, width, theme, "dim", " ", " ");
 }

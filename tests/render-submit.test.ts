@@ -111,6 +111,34 @@ test("submit screen stacks review above actions on narrow screens", () => {
 	]);
 });
 
+test("submit screen can show a review shortcut hint below the actions", () => {
+	const state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				label: "Color",
+				prompt: "Pick one color.",
+				options: [{ value: "blue", label: "Blue" }],
+			},
+		],
+	});
+
+	const lines: string[] = [];
+	renderSubmitScreen(
+		lines,
+		state,
+		plainTheme(),
+		UI_DIMENSIONS.submitWideMinWidth - 14,
+		"Press 1, 2, or 3 twice to confirm a review action."
+	);
+
+	assert.equal(
+		lines.includes(" Press 1, 2, or 3 twice to confirm a review"),
+		true
+	);
+	assert.equal(lines.includes(" action."), true);
+});
+
 test("submit screen shows notes only for answered questions in submit mode", () => {
 	let state = createInitialState({
 		questions: [

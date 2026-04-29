@@ -56,7 +56,7 @@ test("wide header keeps all tabs and framing arrows on the tab row", () => {
 		editor: mockEditor(),
 	});
 
-	assert.equal(lines[3], " ←  ☐ One   ☐ Two   ✔ Submit  →");
+	assert.equal(lines[3], " ←  ☐ One   ☐ Two   ☰ Review  →");
 });
 
 test("narrow tab strip keeps active middle tab visible", () => {
@@ -143,7 +143,7 @@ test("narrow tab strip keeps submit tab visible when active", () => {
 		editor: mockEditor(),
 	});
 
-	assert.equal(lines[3], " ←  ✔ Submit  →");
+	assert.equal(lines[3], " ←  ☰ Review  →");
 });
 
 test("tab strip avoids truncation at narrow boundary widths", () => {

@@ -35,7 +35,7 @@ test("dirty flow state is true for saved answers or editor drafts", () => {
 	assert.equal(hasDirtyFlowState(noteEditing, "draft note"), true);
 });
 
-test("confirm dismiss when dirty is opt-in and respects dirty state", () => {
+test("confirm dismiss when dirty respects dirty state and config", () => {
 	const state = applyNumberShortcut(
 		createInitialState({
 			questions: [
@@ -48,20 +48,20 @@ test("confirm dismiss when dirty is opt-in and respects dirty state", () => {
 		}),
 		1
 	);
-	const enabledConfig = {
+	const disabledConfig = {
 		...DEFAULT_ASK_CONFIG,
 		behaviour: {
 			...DEFAULT_ASK_CONFIG.behaviour,
-			confirmDismissWhenDirty: true,
+			confirmDismissWhenDirty: false,
 		},
 	};
 
 	assert.equal(
-		shouldConfirmDirtyDismiss({ config: DEFAULT_ASK_CONFIG, state }),
+		shouldConfirmDirtyDismiss({ config: disabledConfig, state }),
 		false
 	);
 	assert.equal(
-		shouldConfirmDirtyDismiss({ config: enabledConfig, state }),
+		shouldConfirmDirtyDismiss({ config: DEFAULT_ASK_CONFIG, state }),
 		true
 	);
 });

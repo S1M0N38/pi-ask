@@ -121,7 +121,9 @@ Fixed bindings:
 | `Tab` `Shift+Tab` / `←` `→` | Empty editor                            | Switch tabs without closing editor          |
 | Arrow keys / `Tab`          | Non-empty editor                        | Stay in editor for cursor movement          |
 
-Config file: `~/.pi/.../extensions/eko24ive-pi-ask.json`
+Review-tab shortcuts can optionally require the same number key twice via `behaviour.doublePressReviewShortcuts`.
+
+Config file: `~/.pi/.../eko24ive-pi-ask.json`
 
 You can edit this file yourself, ask pi to edit it for you, or use the read-only `Keymaps` tab to find the exact path and active bindings.
 
@@ -129,7 +131,10 @@ You can edit this file yourself, ask pi to edit it for you, or use the read-only
 {
   "schemaVersion": 1,
   "behaviour": {
-    "autoSubmitWhenAnsweredWithoutNotes": false
+    "autoSubmitWhenAnsweredWithoutNotes": false,
+    "confirmDismissWhenDirty": true,
+    "doublePressReviewShortcuts": true,
+    "showFooterHints": true
   },
   "keymaps": {
     "cancel": "esc",
@@ -148,7 +153,7 @@ Accepted notation follows pi-tui key ids. Common aliases are normalized, for exa
 
 After installation, the extension registers the `ask_user` tool and `/ask-settings` command.
 
-Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. The ask settings modal is available both from `?` in the ask flow and from the `/ask-settings` command, with `Keymaps` and `Behaviour` tabs. `Keymaps` is read-only and shows the active resolved bindings plus the config file path. Behaviour settings are saved explicitly with `Ctrl+S`.
+Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. The ask settings modal is available both from `?` in the ask flow and from the `/ask-settings` command, with `Keymaps` and `Behaviour` tabs. `Keymaps` is read-only and shows the active resolved bindings plus the config file path. Behaviour settings are saved explicitly with `Ctrl+S`, including whether review-tab number shortcuts require a double press.
 
 You can also talk to pi to configure this extension. When asked to customize pi-ask settings or keymaps, the agent is instructed to read the bundled `docs/configuration.md` guide first and then edit the config file accordingly.
 

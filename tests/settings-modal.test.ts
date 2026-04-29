@@ -7,7 +7,8 @@ import { AskSettingsModal } from "../src/ui/settings-modal.ts";
 const savedConfig: AskConfig = {
 	behaviour: {
 		autoSubmitWhenAnsweredWithoutNotes: false,
-		confirmDismissWhenDirty: false,
+		confirmDismissWhenDirty: true,
+		doublePressReviewShortcuts: true,
 		showFooterHints: true,
 	},
 	keymaps: {
@@ -59,12 +60,15 @@ function createModal(
 test("settings modal renders compactly on phone-width screens", () => {
 	const modal = createModal();
 	const lines = modal.render(28);
+	const text = lines.join("\n");
 
 	assert(lines.every((line) => visibleWidth(line) <= 28));
-	assert(lines.join("\n").includes("@eko24ive/pi-ask"));
+	assert(lines.length <= 24);
+	assert(text.includes("@eko24ive/pi-ask"));
 	assert(lines[1]?.includes("Keymaps"));
-	assert(lines.join("\n").includes("/reload after editing."));
-	assert(lines.join("\n").includes("Open ask settings modal"));
+	assert(text.includes("Edit keymaps there, then"));
+	assert(text.includes("? settings"));
+	assert(text.includes("Esc cancel"));
 	assert.equal(lines[0]?.includes("├"), false);
 });
 
@@ -77,10 +81,21 @@ test("settings modal renders behaviour tab with checkbox and dirty notice", () =
 
 	assert(text.includes("Behaviour"));
 	assert(text.includes("[x] Auto-submit when answered without notes"));
-	assert(text.includes("[ ] Confirm dismiss when dirty"));
+	assert(text.includes("[x] Confirm dismiss when dirty"));
+	assert(text.includes("[x] Double-press review shortcuts"));
 	assert(text.includes("[x] Show footer hints"));
 	assert(text.includes("Unsaved changes. Press Ctrl+S to save."));
 	assert(text.includes("Ctrl+S save · Esc/Ctrl+C/? twice discard"));
+});
+
+test("settings modal keeps behaviour tab compact on narrow screens", () => {
+	const modal = createModal();
+	modal.handleInput("\t");
+	const lines = modal.render(36);
+
+	assert(lines.every((line) => visibleWidth(line) <= 36));
+	assert(lines.length <= 21);
+	assert(lines.join("\n").includes("Show footer hints"));
 });
 
 test("settings modal keymaps tab shows invalid-keymaps session warning", () => {
@@ -135,7 +150,8 @@ test("settings modal saves and clears dirty state", async () => {
 
 	const text = modal.render(72).join("\n");
 	assert.equal(saved?.behaviour.autoSubmitWhenAnsweredWithoutNotes, true);
-	assert.equal(saved?.behaviour.confirmDismissWhenDirty, false);
+	assert.equal(saved?.behaviour.confirmDismissWhenDirty, true);
+	assert.equal(saved?.behaviour.doublePressReviewShortcuts, true);
 	assert.equal(saved?.behaviour.showFooterHints, true);
 	assert(text.includes("Saved"));
 	assert.equal(text.includes("Unsaved changes. Press Ctrl+S to save."), false);

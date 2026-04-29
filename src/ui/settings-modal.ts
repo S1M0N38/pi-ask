@@ -43,6 +43,7 @@ interface AskSettingsModalOptions {
 
 const MIN_WIDTH = 24;
 const COMPACT_WIDTH = 46;
+const COMPACT_DESCRIPTION_LINES = 2;
 const TAB_GAP = "  ";
 const DISCARD_WINDOW_MS = 1000;
 const SETTINGS_MODAL_KEYS = {
@@ -72,6 +73,15 @@ const BEHAVIOUR_ROWS = [
 			return config.behaviour.confirmDismissWhenDirty;
 		},
 		label: "Confirm dismiss when dirty",
+	},
+	{
+		description:
+			"Require pressing 1, 2, or 3 twice on the review tab before triggering Submit, Elaborate, or Cancel.",
+		key: "doublePressReviewShortcuts",
+		getValue(config: AskConfig) {
+			return config.behaviour.doublePressReviewShortcuts;
+		},
+		label: "Double-press review shortcuts",
 	},
 	{
 		description: "Show footer keymap hints at the bottom of the ask flow.",
@@ -305,8 +315,9 @@ function renderBehaviourTab(
 	state: AskSettingsState,
 	layout: SettingsLayout
 ): string[] {
+	const compact = layout.innerW < COMPACT_WIDTH;
 	return BEHAVIOUR_ROWS.flatMap((row, index) =>
-		renderBehaviourRow(theme, state, layout, row, index)
+		renderBehaviourRow(theme, state, layout, row, index, compact)
 	);
 }
 
@@ -315,7 +326,8 @@ function renderBehaviourRow(
 	state: AskSettingsState,
 	layout: SettingsLayout,
 	row: (typeof BEHAVIOUR_ROWS)[number],
-	index: number
+	index: number,
+	compact: boolean
 ): string[] {
 	const focused = index === state.behaviourFocusIndex;
 	const dirty =
@@ -334,14 +346,22 @@ function renderBehaviourRow(
 		label = theme.bg("selectedBg", label);
 	}
 
+	const descriptionLines = wrapText(row.description, layout.innerW - 4);
 	const lines = [
 		layout.line(truncateToWidth(label, layout.innerW - 1, "…")),
-		...wrapText(row.description, layout.innerW - 4).map((descLine) =>
-			layout.line(`   ${theme.fg("dim", descLine)}`)
-		),
+		...descriptionLines
+			.slice(0, compact ? COMPACT_DESCRIPTION_LINES : descriptionLines.length)
+			.map((descLine) => layout.line(`   ${theme.fg("dim", descLine)}`)),
 	];
-	if (index < BEHAVIOUR_ROWS.length - 1) {
+	if (!compact && index < BEHAVIOUR_ROWS.length - 1) {
 		lines.push(layout.line());
+	}
+	if (
+		compact &&
+		descriptionLines.length > COMPACT_DESCRIPTION_LINES &&
+		index < BEHAVIOUR_ROWS.length - 1
+	) {
+		lines.push(layout.line(`   ${theme.fg("dim", "…")}`));
 	}
 	return lines;
 }
@@ -356,29 +376,18 @@ function renderKeymapsTab(
 	const lines: string[] = [];
 	const compact = layout.innerW < COMPACT_WIDTH;
 	const { customizable, fixed } = getAskKeymaps(config);
-	const headerLines = [
-		"Edit this config file to change customizable ask keymaps:",
-		configPath,
-		"Restart pi or run /reload after editing.",
-	];
 
-	for (const text of headerLines) {
-		for (const line of wrapText(text, layout.innerW - 2)) {
-			lines.push(
-				layout.line(theme.fg(text === configPath ? "accent" : "dim", line))
-			);
-		}
-	}
-	if (notice?.kind === "error") {
-		lines.push(layout.line());
-		for (const line of wrapText(
-			"Using default keymaps this session because configured keymaps were rejected.",
-			layout.innerW - 2
-		)) {
-			lines.push(layout.line(theme.fg("warning", line)));
-		}
-	}
+	pushKeymapHeaderLines(lines, theme, layout, configPath, compact);
+	pushInvalidKeymapNotice(lines, theme, layout, notice, compact);
 	lines.push(layout.line());
+	if (compact) {
+		lines.push(
+			...renderCompactKeymapSection(theme, layout, "Customizable", customizable)
+		);
+		lines.push(layout.line());
+		lines.push(...renderCompactKeymapSection(theme, layout, "Fixed", fixed));
+		return lines;
+	}
 	lines.push(layout.line(theme.fg("muted", "Customizable")));
 	pushKeymapRows(lines, theme, layout, customizable, compact);
 	lines.push(
@@ -387,6 +396,98 @@ function renderKeymapsTab(
 	lines.push(layout.line(theme.fg("muted", "Fixed")));
 	pushKeymapRows(lines, theme, layout, fixed, compact);
 	return lines;
+}
+
+function pushKeymapHeaderLines(
+	lines: string[],
+	theme: Theme,
+	layout: SettingsLayout,
+	configPath: string,
+	compact: boolean
+) {
+	const headerLines = compact
+		? [configPath, "Edit keymaps there, then /reload."]
+		: [
+				"Edit this config file to change customizable ask keymaps:",
+				configPath,
+				"Restart pi or run /reload after editing.",
+			];
+
+	for (const text of headerLines) {
+		for (const line of wrapText(text, layout.innerW - 2)) {
+			lines.push(
+				layout.line(theme.fg(text === configPath ? "accent" : "dim", line))
+			);
+		}
+	}
+}
+
+function pushInvalidKeymapNotice(
+	lines: string[],
+	theme: Theme,
+	layout: SettingsLayout,
+	notice: AskConfigNotice | undefined,
+	compact: boolean
+) {
+	if (notice?.kind !== "error") {
+		return;
+	}
+
+	const warningText = compact
+		? "Invalid config; using default keymaps this session."
+		: "Using default keymaps this session because configured keymaps were rejected.";
+	for (const line of wrapText(warningText, layout.innerW - 2)) {
+		lines.push(layout.line(theme.fg("warning", line)));
+	}
+}
+
+function renderCompactKeymapSection(
+	theme: Theme,
+	layout: SettingsLayout,
+	title: string,
+	keymaps: readonly AskKeyBinding[]
+): string[] {
+	const summary = keymaps
+		.map((hint) => `${hint.label} ${compactKeymapDescription(hint)}`)
+		.join(" · ");
+	const lines = [layout.line(theme.fg("muted", title))];
+	for (const line of wrapText(summary, layout.innerW - 2)) {
+		lines.push(layout.line(line));
+	}
+	return lines;
+}
+
+function compactKeymapDescription(hint: AskKeyBinding): string {
+	switch (hint.id) {
+		case "cancel":
+			return "cancel";
+		case "dismiss":
+			return "dismiss";
+		case "toggle":
+			return "toggle";
+		case "confirm":
+			return "confirm";
+		case "optionNote":
+			return "option note";
+		case "questionNote":
+			return "question note";
+		case "settings":
+			return "settings";
+		case "nextTab":
+			return "next tab";
+		case "previousTab":
+			return "prev tab";
+		case "previousOption":
+			return "move";
+		case "nextOption":
+			return "next";
+		case "numberShortcut":
+			return "quick select";
+		case "fileReference":
+			return "file refs";
+		default:
+			return hint.description.toLowerCase();
+	}
 }
 
 function pushKeymapRows(
