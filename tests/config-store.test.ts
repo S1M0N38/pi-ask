@@ -111,13 +111,12 @@ test("config store loads current config version without rewriting", async () => 
 	await rm(dirname(path), { force: true, recursive: true });
 });
 
-test("config store migrates the legacy extensions config path", async () => {
+test("config store migrates the legacy root config path into extensions", async () => {
 	const root = await import("node:fs/promises").then(({ mkdtemp }) =>
 		mkdtemp(join(tmpdir(), "pi-ask-config-legacy-"))
 	);
-	const path = join(root, "eko24ive-pi-ask.json");
-	const legacyPath = join(root, "extensions", "eko24ive-pi-ask.json");
-	await mkdir(dirname(legacyPath), { recursive: true });
+	const path = join(root, "extensions", "eko24ive-pi-ask.json");
+	const legacyPath = join(root, "eko24ive-pi-ask.json");
 	await writeFile(
 		legacyPath,
 		JSON.stringify({
@@ -131,7 +130,7 @@ test("config store migrates the legacy extensions config path", async () => {
 			keymaps: DEFAULT_ASK_CONFIG.keymaps,
 		})
 	);
-	const store = new AskConfigStore(path, legacyPath);
+	const store = new AskConfigStore(path, [legacyPath]);
 
 	const result = await store.ensureLoaded();
 
@@ -153,6 +152,52 @@ test("config store migrates the legacy extensions config path", async () => {
 		},
 		keymaps: DEFAULT_ASK_CONFIG.keymaps,
 	});
+	await rm(root, { force: true, recursive: true });
+});
+
+test("config store leaves legacy root config when extensions config exists", async () => {
+	const root = await import("node:fs/promises").then(({ mkdtemp }) =>
+		mkdtemp(join(tmpdir(), "pi-ask-config-conflict-"))
+	);
+	const path = join(root, "extensions", "eko24ive-pi-ask.json");
+	const legacyPath = join(root, "eko24ive-pi-ask.json");
+	await mkdir(dirname(path), { recursive: true });
+	await writeFile(
+		path,
+		JSON.stringify({
+			schemaVersion: 1,
+			behaviour: {
+				autoSubmitWhenAnsweredWithoutNotes: false,
+				confirmDismissWhenDirty: true,
+				doublePressReviewShortcuts: true,
+				showFooterHints: true,
+			},
+			keymaps: DEFAULT_ASK_CONFIG.keymaps,
+		})
+	);
+	await writeFile(
+		legacyPath,
+		JSON.stringify({
+			schemaVersion: 1,
+			behaviour: {
+				autoSubmitWhenAnsweredWithoutNotes: true,
+				confirmDismissWhenDirty: true,
+				doublePressReviewShortcuts: true,
+				showFooterHints: false,
+			},
+			keymaps: DEFAULT_ASK_CONFIG.keymaps,
+		})
+	);
+	const store = new AskConfigStore(path, [legacyPath]);
+
+	const result = await store.ensureLoaded();
+
+	assert.equal(
+		result.config.behaviour.autoSubmitWhenAnsweredWithoutNotes,
+		false
+	);
+	assert.equal(result.config.behaviour.showFooterHints, true);
+	assert.ok(await readFile(legacyPath, "utf-8"));
 	await rm(root, { force: true, recursive: true });
 });
 

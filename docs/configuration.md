@@ -12,9 +12,17 @@ When changing pi-ask settings:
 
 Default path:
 
-`~/.pi/agent/eko24ive-pi-ask.json`
+`~/.pi/agent/extensions/eko24ive-pi-ask.json`
 
 If the file does not exist yet, pi-ask creates it with the current default settings the first time the ask flow is used.
+
+Older pi-ask versions wrote this file at `~/.pi/agent/eko24ive-pi-ask.json`. If that legacy file exists and the extensions config does not, pi-ask moves it into `~/.pi/agent/extensions/` on load. If both files exist, pi-ask uses the extensions config and leaves the legacy root file untouched.
+
+## Config versions and migrations
+
+`schemaVersion` identifies the persisted config shape. pi-ask migrates older supported schema versions forward before validation, then rewrites the file in the current shape. Migrations preserve existing user-provided values and add new fields from defaults when needed.
+
+Unsupported future versions or invalid files are backed up and defaults are loaded.
 
 ## Config shape
 

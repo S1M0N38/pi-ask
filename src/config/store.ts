@@ -10,6 +10,7 @@ import {
 	toAskConfigFileV1,
 } from "./defaults.ts";
 import { AskConfigMigrationError, migrateAskConfig } from "./migrate.ts";
+import { migrateAskConfigPathIfNeeded } from "./path-migrations.ts";
 import type { AskConfig } from "./schema.ts";
 
 export interface AskConfigNotice {
@@ -28,15 +29,13 @@ export class AskConfigStore {
 	private notice?: AskConfigNotice;
 	private readonly listeners = new Set<(config: AskConfig) => void>();
 	private readonly configPath: string;
-	private readonly legacyConfigPath?: string;
+	private readonly legacyConfigPaths: string[];
 
-	constructor(
-		configPath = getAskConfigPath(),
-		legacyConfigPath = getLegacyAskConfigPath()
-	) {
-		this.configPath = configPath;
-		this.legacyConfigPath =
-			legacyConfigPath === configPath ? undefined : legacyConfigPath;
+	constructor(configPath?: string, legacyConfigPaths?: string[]) {
+		this.configPath = configPath ?? getAskConfigPath();
+		this.legacyConfigPaths = (
+			legacyConfigPaths ?? (configPath ? [] : getLegacyAskConfigPaths())
+		).filter((path) => path !== this.configPath);
 	}
 
 	subscribe(onChange: (config: AskConfig) => void): () => void {
@@ -148,17 +147,10 @@ export class AskConfigStore {
 	}
 
 	private async migrateLegacyConfigIfNeeded(): Promise<void> {
-		if (!this.legacyConfigPath) {
-			return;
-		}
-		if (await pathExists(this.configPath)) {
-			return;
-		}
-		if (!(await pathExists(this.legacyConfigPath))) {
-			return;
-		}
-		await mkdir(dirname(this.configPath), { recursive: true });
-		await rename(this.legacyConfigPath, this.configPath);
+		await migrateAskConfigPathIfNeeded({
+			currentPath: this.configPath,
+			legacyPaths: this.legacyConfigPaths,
+		});
 	}
 }
 
@@ -170,28 +162,16 @@ export function getAskConfigStore(): AskConfigStore {
 }
 
 export function getAskConfigPath(): string {
-	return join(getAgentDir(), "eko24ive-pi-ask.json");
+	return join(getAgentDir(), "extensions", "eko24ive-pi-ask.json");
 }
 
-export function getLegacyAskConfigPath(): string {
-	return join(getAgentDir(), "extensions", "eko24ive-pi-ask.json");
+export function getLegacyAskConfigPaths(): string[] {
+	return [join(getAgentDir(), "eko24ive-pi-ask.json")];
 }
 
 function createBackupPath(path: string, date: Date): string {
 	const timestamp = date.toISOString().replaceAll(":", "-").replace(/\./g, "-");
 	return path.replace(JSON_EXTENSION_PATTERN, `.${timestamp}.bak.json`);
-}
-
-async function pathExists(path: string): Promise<boolean> {
-	try {
-		await readFile(path, "utf-8");
-		return true;
-	} catch (error) {
-		if (isMissingFileError(error)) {
-			return false;
-		}
-		throw error;
-	}
 }
 
 function isMissingFileError(error: unknown): boolean {

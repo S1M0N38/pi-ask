@@ -32,7 +32,9 @@ The codebase is split so the implementation reads through file boundaries and na
 
 - `src/config/defaults.ts` — canonical runtime defaults
 - `src/config/schema.ts` — persisted config schema and runtime type
-- `src/config/migrate.ts` — persisted-file validation/migration boundary, including keymap normalization/fallback
+- `src/config/migrate.ts` — persisted-file validation boundary, including keymap normalization/fallback
+- `src/config/migrations/` — ordered schema-version migration framework for persisted config shape changes
+- `src/config/path-migrations.ts` — file-location migration before config load
 - `src/config/store.ts` — load/save/backup/runtime subscription store
 
 ### UI
@@ -68,10 +70,12 @@ The codebase is split so the implementation reads through file boundaries and na
 - deselected option notes stay in UI state
 - only selected option notes are emitted in the final result
 - editor lifecycle stays in the controller, not in the reducers
-- persisted ask settings are versioned and normalized before use
+- persisted ask settings are migrated to the current schema version, validated, and normalized before use
+- config schema migrations preserve user-provided values and add new defaults only when fields are absent
 - invalid persisted keymaps fall back to default keymaps for the current session without discarding valid behaviour settings
 - ask settings behaviour changes persist immediately from the settings list
-- when the ask config file is missing, the first ask use writes a default persisted config snapshot
+- when the ask config file is missing, the first ask use writes a default persisted config snapshot under `~/.pi/agent/extensions/`
+- legacy root config files move into `~/.pi/agent/extensions/` only when the current config file is absent
 - live config updates can affect an in-progress ask flow immediately
 
 ## Documentation rule

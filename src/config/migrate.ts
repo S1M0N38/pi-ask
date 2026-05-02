@@ -3,6 +3,11 @@ import {
 	normalizeConfiguredKeymaps,
 } from "../constants/keymaps.ts";
 import { normalizeAskConfig } from "./defaults.ts";
+import {
+	AskConfigVersionMigrationError,
+	type AskConfigVersionMigrationResult,
+	migrateAskConfigFileToCurrent,
+} from "./migrations/index.ts";
 import type { AskConfig, AskConfigFileV1 } from "./schema.ts";
 import { validateAskConfigFileV1 } from "./schema.ts";
 
@@ -25,37 +30,29 @@ export interface AskConfigMigrationResult {
 }
 
 export function migrateAskConfig(raw: unknown): AskConfigMigrationResult {
-	if (!(raw && typeof raw === "object")) {
+	let migratedFile: AskConfigVersionMigrationResult;
+	try {
+		migratedFile = migrateAskConfigFileToCurrent(raw);
+	} catch (error) {
+		throw new AskConfigMigrationError(
+			"Config was invalid or unsupported.",
+			error instanceof AskConfigVersionMigrationError
+				? error.reason
+				: "migration_failed"
+		);
+	}
+
+	if (!validateAskConfigFileV1.Check(migratedFile.config)) {
 		throw new AskConfigMigrationError(
 			"Config was invalid or unsupported.",
 			"invalid_or_unsupported"
 		);
 	}
 
-	if (!("schemaVersion" in raw)) {
-		throw new AskConfigMigrationError(
-			"Config was invalid or unsupported.",
-			"invalid_or_unsupported"
-		);
-	}
-
-	if ((raw as { schemaVersion?: unknown }).schemaVersion !== 1) {
-		throw new AskConfigMigrationError(
-			"Config was invalid or unsupported.",
-			"invalid_or_unsupported"
-		);
-	}
-
-	if (!validateAskConfigFileV1.Check(raw)) {
-		throw new AskConfigMigrationError(
-			"Config was invalid or unsupported.",
-			"invalid_or_unsupported"
-		);
-	}
-
-	const config = normalizeAskConfig(raw as AskConfigFileV1);
+	const currentFile = migratedFile.config as AskConfigFileV1;
+	const config = normalizeAskConfig(currentFile);
 	const keymapsResult = normalizeConfiguredKeymaps(
-		(raw as AskConfigFileV1).keymaps as
+		currentFile.keymaps as
 			| Partial<Record<AskConfigurableKeyAction, unknown>>
 			| undefined
 	);
@@ -65,7 +62,7 @@ export function migrateAskConfig(raw: unknown): AskConfigMigrationResult {
 				...config,
 				keymaps: normalizeAskConfig().keymaps,
 			},
-			migrated: false,
+			migrated: migratedFile.migrated,
 			notice: `${keymapsResult.error} Using default ask keymaps for this session. Edit the config and restart pi or run /reload.`,
 		};
 	}
@@ -75,6 +72,6 @@ export function migrateAskConfig(raw: unknown): AskConfigMigrationResult {
 			...config,
 			keymaps: keymapsResult.keymaps,
 		},
-		migrated: false,
+		migrated: migratedFile.migrated,
 	};
 }

@@ -123,7 +123,7 @@ Fixed bindings:
 
 Review-tab shortcuts can optionally require the same number key twice via `behaviour.doublePressReviewShortcuts`.
 
-Config file: `~/.pi/.../eko24ive-pi-ask.json`
+Config file: `~/.pi/agent/extensions/eko24ive-pi-ask.json`
 
 You can edit this file yourself, ask pi to edit it for you, or use `/ask-settings` to find the exact config path and toggle behaviour settings.
 
