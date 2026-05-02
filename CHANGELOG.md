@@ -1,3 +1,16 @@
+# [0.8.0](https://github.com/eko24ive/pi-ask/compare/v0.7.0...v0.8.0) (2026-05-02)
+
+
+### Bug Fixes
+
+* rename settings modal title ([4feeec9](https://github.com/eko24ive/pi-ask/commit/4feeec9f0f535b4a129c8ce5d0f310f1365c6010))
+
+
+### Features
+
+* add answer extraction replay commands ([5b70eca](https://github.com/eko24ive/pi-ask/commit/5b70eca306e15335e0a24754280c1ea6d9787bbf))
+* **config:** add migration framework ([288caf4](https://github.com/eko24ive/pi-ask/commit/288caf49de4a78e35845187f736b9685f732c5cc))
+
 # [0.7.0](https://github.com/eko24ive/pi-ask/compare/v0.6.1...v0.7.0) (2026-04-29)
 
 
