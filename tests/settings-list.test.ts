@@ -66,7 +66,7 @@ test("settings list renders behaviour settings and config path", () => {
 	const text = list.render(72).join("\n");
 
 	assert(text.includes("╭"));
-	assert(text.includes("Ask Settings"));
+	assert(text.includes("@eko24ive/pi-ask"));
 	assert(text.includes("Auto-submit when answered without notes"));
 	assert(text.includes("[off]"));
 	assert(text.includes("Confirm dismiss when dirty"));

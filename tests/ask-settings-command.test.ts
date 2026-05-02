@@ -66,7 +66,7 @@ test("registers /ask-settings and opens the shared settings overlay", async () =
 		},
 	});
 	const text = customCalls[0]?.lines.join("\n") ?? "";
-	assert(text.includes("Ask Settings"));
+	assert(text.includes("@eko24ive/pi-ask"));
 	assert(
 		text.includes("Edit this config file to change customizable ask keymaps:")
 	);
