@@ -179,6 +179,8 @@ Replay commands are branch-aware. They read persisted entries from the current p
 
 Cancellation is local to the UI: closing a replayed form does not start a new agent turn. Submitted answers are sent back as a normal user follow-up message.
 
+Kudos to [@k0valik](https://github.com/k0valik) for the `/answer` idea.
+
 You can also talk to pi to configure this extension. When asked to customize pi-ask settings or keymaps, the agent is instructed to read the bundled `docs/configuration.md` guide first and then edit the config file accordingly.
 
 This package also bundles the `ask-user` skill profile from `skills/ask-user/SKILL.md`. It reinforces when to use the tool, is enabled by default when installed, and can be disabled via `pi config`. The skill was inspired by https://github.com/edlsh/pi-ask-user.
