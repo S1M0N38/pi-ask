@@ -200,11 +200,11 @@ This document defines the stable external behavior. It does not explain internal
 - on the review tab, `Submit` and `Cancel` preview notes only for answered questions
 - on the review tab, `Elaborate` preview expands to all question notes and all option notes, including notes on unselected options
 - transcript-friendly call and result rendering
-- ask settings modal with `Keymaps` and `Behaviour` tabs
-- `?` in the ask flow and `/ask-settings` in pi open the same ask settings modal
-- `Behaviour` exposes persisted user settings for `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, and `Show footer hints`
+- ask settings list with binary behaviour toggles
+- `?` in the ask flow and `/ask-settings` in pi open the same lightweight ask settings overlay
+- behaviour settings persist immediately when changed: `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, and `Show footer hints`
 - `Keymaps` is a persisted config section for `cancel`, `dismiss`, `toggle`, `confirm`, `optionNote`, and `questionNote`
-- the `Keymaps` tab is read-only and shows the active bindings plus the config file path
+- the settings list shows the absolute config file path for changing customizable ask keymaps
 - if the flow is already on the review tab, all questions are answered, and no notes exist, enabling auto-submit can complete the current ask flow immediately
 - elaborate results are phrased as direct follow-up instructions, for example: `User asked to elaborate on question "Which option would you like to select?" option "Option A" with note "why this one?"`
 
@@ -212,8 +212,8 @@ This document defines the stable external behavior. It does not explain internal
 
 Main flow:
 
-- `?`: open the ask settings modal on the `Keymaps` tab
-- inside the ask settings modal, `Esc`, `Ctrl+C`, and `?` close it; dirty drafts require a second close action within a short window to discard unsaved changes
+- `?`: open ask settings
+- inside ask settings, `Esc`, `Ctrl+C`, and `?` close it
 - `Tab`, `Shift+Tab`, `Left`, `Right`: move between tabs
 - `Up`, `Down`: move between options
 - `1..9`: select or toggle the matching option; on the review tab, `1`, `2`, and `3` trigger `Submit`, `Elaborate`, and `Cancel`
@@ -227,8 +227,8 @@ Editing flow:
 - when `Confirm dismiss when dirty` is enabled, cancelling or dismissing a dirty ask flow requires the same action a second time
 - the dirty-dismiss warning stays visible until the user changes tabs in the ask flow
 - the configurable `dismiss` binding dismisses the entire flow immediately without saving the current editor draft when no dirty-dismiss confirmation is pending
-- `?`: open the ask settings modal on the `Keymaps` tab when the editor is empty; otherwise enter `?` as text
-- inside the ask settings modal, `Ctrl+S` saves the current draft config without closing the modal
+- `?`: open ask settings when the editor is empty; otherwise enter `?` as text
+- inside ask settings, behaviour changes save immediately without explicit save feedback
 - when editor has text, arrow keys and `Tab` stay in the editor so the cursor can move while typing
 - when editor is empty, `Up`/`Down` move options and `Tab`/`Shift+Tab`/`Left`/`Right` move between tabs without requiring the configurable cancel key first
 - navigation resumes only after closing the editor with the configurable `cancel` binding, unless the editor is empty and the navigation keys above are used

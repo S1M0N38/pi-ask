@@ -93,7 +93,7 @@ Ask the agent to elaborate on notes before finalizing choices.
 
 ## Default key bindings
 
-Open the ask settings modal with `?` during the ask flow, or with the `/ask-settings` command from pi.
+Open ask settings with `?` during the ask flow, or with the `/ask-settings` command from pi.
 
 Customizable via config:
 
@@ -110,7 +110,7 @@ Fixed bindings:
 
 | Key                         | Context                                 | Effect                                      |
 |-----------------------------|-----------------------------------------|---------------------------------------------|
-| `?`                         | Ask flow / empty editor                 | Open ask settings modal                     |
+| `?`                         | Ask flow / empty editor                 | Open ask settings                           |
 | `Tab` `Shift+Tab`           | Main flow                               | Switch tabs                                 |
 | `←` `→`                     | Main flow                               | Switch tabs                                 |
 | `↑` `↓`                     | Main flow                               | Move cursor                                 |
@@ -125,7 +125,7 @@ Review-tab shortcuts can optionally require the same number key twice via `behav
 
 Config file: `~/.pi/.../eko24ive-pi-ask.json`
 
-You can edit this file yourself, ask pi to edit it for you, or use the read-only `Keymaps` tab to find the exact path and active bindings.
+You can edit this file yourself, ask pi to edit it for you, or use `/ask-settings` to find the exact config path and toggle behaviour settings.
 
 ```json
 {
@@ -153,7 +153,7 @@ Accepted notation follows pi-tui key ids. Common aliases are normalized, for exa
 
 After installation, the extension registers the `ask_user` tool and `/ask-settings` command.
 
-Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. The ask settings modal is available both from `?` in the ask flow and from the `/ask-settings` command, with `Keymaps` and `Behaviour` tabs. `Keymaps` is read-only and shows the active resolved bindings plus the config file path. Behaviour settings are saved explicitly with `Ctrl+S`, including whether review-tab number shortcuts require a double press.
+Agents can auto-discover and call `ask_user` when they need clarification instead of guessing. In interactive sessions, it opens a terminal UI flow for structured answers, supports native pi-style `@` file references while typing answers or notes, and returns normalized answers back to the agent. Ask settings are available both from `?` in the ask flow and from the `/ask-settings` command. Behaviour settings are binary `on`/`off` toggles that save immediately; customizable ask keymaps are changed by editing the shown config file path.
 
 You can also talk to pi to configure this extension. When asked to customize pi-ask settings or keymaps, the agent is instructed to read the bundled `docs/configuration.md` guide first and then edit the config file accordingly.
 

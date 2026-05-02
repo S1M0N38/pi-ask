@@ -42,7 +42,7 @@ import {
 	getReviewShortcutHint,
 	resolveReviewShortcutDoublePress,
 } from "./review-shortcuts.ts";
-import { showAskSettingsModal } from "./show-settings-modal.ts";
+import { showAskSettings } from "./show-settings.ts";
 
 type CustomCallback = Parameters<ExtensionContext["ui"]["custom"]>[0];
 type CustomCallbackArgs = CustomCallback extends (...args: infer T) => unknown
@@ -430,7 +430,7 @@ function showSettingsModal(controller: AskFlowController) {
 		return;
 	}
 	controller.settingsOpen = true;
-	showAskSettingsModal(controller.ctx.ui).finally(() => {
+	showAskSettings(controller.ctx.ui).finally(() => {
 		controller.settingsOpen = false;
 		refresh(controller);
 	});

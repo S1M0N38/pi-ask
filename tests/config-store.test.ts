@@ -73,7 +73,7 @@ test("config store backs up broken json and loads defaults", async () => {
 	assert.deepEqual(result.config, DEFAULT_ASK_CONFIG);
 	assert.equal(
 		result.notice?.text,
-		"Config was invalid or unsupported. Backed it up and loaded defaults. Press Ctrl+S to save a fresh config."
+		"Config was invalid or unsupported. Backed it up and loaded defaults. Change any behaviour setting or edit the config file to save a fresh config."
 	);
 	assert(dirEntries.some((entry) => entry.includes(".bak.json")));
 	await assert.rejects(readFile(path, "utf-8"));

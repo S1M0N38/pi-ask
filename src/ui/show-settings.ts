@@ -1,15 +1,15 @@
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent";
 import { getAskConfigPath, getAskConfigStore } from "../config/store.ts";
-import { AskSettingsModal } from "./settings-modal.ts";
+import { AskSettingsList } from "./settings-list.ts";
 
-export async function showAskSettingsModal(
+export async function showAskSettings(
 	ui: Pick<ExtensionContext, "ui">["ui"]
 ): Promise<void> {
 	const store = getAskConfigStore();
 	const { config, notice } = await store.ensureLoaded();
 	return ui.custom<void>(
 		(tui, theme, _keybindings, done) =>
-			new AskSettingsModal(theme, {
+			new AskSettingsList(theme, {
 				configPath: getAskConfigPath(),
 				notice,
 				onClose: () => {

@@ -158,7 +158,7 @@ const FIXED_BINDING_METADATA: readonly FixedBindingMetadata[] = [
 		id: "settings",
 		keys: ["?"],
 		kind: "command",
-		description: "Open ask settings modal",
+		description: "Open ask settings",
 		contexts: ["Main flow", "Empty editor"],
 	},
 	{

@@ -104,7 +104,7 @@ export class AskConfigStore {
 			parsed = JSON.parse(content);
 		} catch {
 			return this.backupAndReset(
-				"Config was invalid or unsupported. Backed it up and loaded defaults. Press Ctrl+S to save a fresh config."
+				"Config was invalid or unsupported. Backed it up and loaded defaults. Change any behaviour setting or edit the config file to save a fresh config."
 			);
 		}
 
@@ -126,8 +126,8 @@ export class AskConfigStore {
 			if (error instanceof AskConfigMigrationError) {
 				return this.backupAndReset(
 					error.reason === "migration_failed"
-						? "Config migration failed. Backed up old config and loaded defaults. Press Ctrl+S to save a fresh config."
-						: "Config was invalid or unsupported. Backed it up and loaded defaults. Press Ctrl+S to save a fresh config."
+						? "Config migration failed. Backed up old config and loaded defaults. Change any behaviour setting or edit the config file to save a fresh config."
+						: "Config was invalid or unsupported. Backed it up and loaded defaults. Change any behaviour setting or edit the config file to save a fresh config."
 				);
 			}
 			throw error;

@@ -16,7 +16,7 @@ function plainTheme() {
 	};
 }
 
-test("registers /ask-settings and opens the shared modal overlay", async () => {
+test("registers /ask-settings and opens the shared settings overlay", async () => {
 	const agentDir = await mkdtemp(join(tmpdir(), "pi-ask-command-"));
 	process.env.PI_CODING_AGENT_DIR = agentDir;
 
@@ -65,7 +65,11 @@ test("registers /ask-settings and opens the shared modal overlay", async () => {
 			width: 72,
 		},
 	});
-	assert(customCalls[0]?.lines.join("\n").includes("Keymaps"));
+	const text = customCalls[0]?.lines.join("\n") ?? "";
+	assert(text.includes("Ask Settings"));
+	assert(
+		text.includes("Edit this config file to change customizable ask keymaps:")
+	);
 
 	delete process.env.PI_CODING_AGENT_DIR;
 	await rm(agentDir, { force: true, recursive: true });

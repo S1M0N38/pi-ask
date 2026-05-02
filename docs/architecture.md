@@ -41,8 +41,7 @@ The codebase is split so the implementation reads through file boundaries and na
 - `src/ui/input.ts` — raw input to commands using resolved config-backed keymaps
 - `src/ui/dismiss-guard.ts` — pure helpers for dirty-flow exit confirmation behavior
 - `src/ui/render.ts` and `src/ui/render-*.ts` — screen rendering, including config-backed footer/keymap hints
-- `src/ui/settings-state.ts` — pure settings-modal draft/dirty/notice state
-- `src/ui/settings-modal.ts` / `src/ui/show-settings-modal.ts` — ask settings modal rendering and launcher
+- `src/ui/settings-list.ts` / `src/ui/show-settings.ts` — lightweight ask settings list rendering and launcher
 - `src/ui/constants.ts` and `src/ui/render-types.ts` — rendering constants/contracts
 - `src/ask-component.ts` — thin custom UI export
 
@@ -71,7 +70,7 @@ The codebase is split so the implementation reads through file boundaries and na
 - editor lifecycle stays in the controller, not in the reducers
 - persisted ask settings are versioned and normalized before use
 - invalid persisted keymaps fall back to default keymaps for the current session without discarding valid behaviour settings
-- settings modal edits a local draft and only persists modal changes on explicit save
+- ask settings behaviour changes persist immediately from the settings list
 - when the ask config file is missing, the first ask use writes a default persisted config snapshot
 - live config updates can affect an in-progress ask flow immediately
 
