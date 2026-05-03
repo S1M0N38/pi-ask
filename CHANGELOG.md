@@ -1,3 +1,11 @@
+## [0.8.1](https://github.com/eko24ive/pi-ask/compare/v0.8.0...v0.8.1) (2026-05-03)
+
+
+### Bug Fixes
+
+* multi-select custom answer toggling ([780aac2](https://github.com/eko24ive/pi-ask/commit/780aac24cf58e144a8ab3ba6a29a75cf6fbf2656))
+* refine ask tool context typing ([cbabd44](https://github.com/eko24ive/pi-ask/commit/cbabd44acc0fadd4959602e8aa73c1c106856aad))
+
 # [0.8.0](https://github.com/eko24ive/pi-ask/compare/v0.7.0...v0.8.0) (2026-05-02)
 
 
