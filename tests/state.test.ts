@@ -390,7 +390,7 @@ test("multi-select keeps existing selections when leaving custom input empty", (
 	assert.equal(state.answers.q1.customText, undefined);
 });
 
-test("multi-select keeps existing selections when saving custom text", () => {
+test("multi-select keeps existing selections and stays on tab when submitting custom text", () => {
 	let state = createInitialState({
 		questions: [
 			{
@@ -414,7 +414,8 @@ test("multi-select keeps existing selections when saving custom text", () => {
 	state = applyNumberShortcut(state, 3);
 	state = submitCustomAnswer(state, "SolidStart");
 
-	assert.equal(state.activeTabIndex, 1);
+	assert.equal(state.activeTabIndex, 0);
+	assert.equal(state.view.kind, "navigate");
 	assert.deepEqual(
 		state.answers.q1.selected.map((selection) => selection.value),
 		["react"]
@@ -539,6 +540,43 @@ test("deselecting an option keeps its note in state but omits it from submission
 			vue: "migration risk",
 		},
 	});
+});
+
+test("multi-select toggles saved custom text selection with space or number shortcuts", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick frameworks",
+				type: "multi",
+				options: [{ value: "react", label: "React" }],
+			},
+		],
+	});
+
+	state = applyNumberShortcut(state, 2);
+	state = submitCustomAnswer(state, "SolidStart");
+	assert.equal(state.answers.q1.customText, "SolidStart");
+	assert.equal(state.activeTabIndex, 0);
+
+	state = toggleCurrentMultiOption(state);
+	assert.equal(state.answers.q1.customText, "SolidStart");
+	assert.equal(state.answers.q1.customSelected, undefined);
+	assert.equal(toAskResult(state).answers.q1, undefined);
+	assert.equal(state.view.kind, "navigate");
+	assert.equal(state.activeTabIndex, 0);
+
+	state = applyNumberShortcut(state, 2);
+	assert.equal(state.answers.q1.customText, "SolidStart");
+	assert.equal(state.answers.q1.customSelected, true);
+	assert.equal(state.view.kind, "navigate");
+	assert.deepEqual(toAskResult(state).answers.q1?.values, ["SolidStart"]);
+
+	state = applyNumberShortcut(state, 2);
+	assert.equal(state.answers.q1.customText, "SolidStart");
+	assert.equal(state.answers.q1.customSelected, undefined);
+	assert.equal(state.view.kind, "navigate");
+	assert.equal(toAskResult(state).answers.q1, undefined);
 });
 
 test("multi-select keeps custom text when toggling additional options", () => {

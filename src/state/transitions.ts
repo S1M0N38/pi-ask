@@ -6,6 +6,7 @@ import {
 	saveCustomText,
 	saveOptionNote,
 	saveQuestionNote,
+	setCustomSelected,
 	setSingleSelection,
 	toggleSelection,
 } from "./answers.ts";
@@ -187,7 +188,7 @@ function activateCurrentOption(
 		return state;
 	}
 	if (option.isCustomOption) {
-		return setView(state, inputView(question.id));
+		return activateCustomOption(state, question.id, question.type, trigger);
 	}
 	if (question.type === "multi") {
 		if (trigger === "confirm") {
@@ -215,6 +216,23 @@ function activateCurrentOption(
 	return trigger === "toggle" ? nextState : advanceToNextTab(nextState);
 }
 
+function activateCustomOption(
+	state: AskState,
+	questionId: string,
+	questionType: AskState["questions"][number]["type"],
+	trigger: "toggle" | "confirm" | "digit"
+): AskState {
+	if (questionType === "multi" && trigger !== "confirm") {
+		const answer = getAnswer(state, questionId);
+		if (answer?.customText?.trim()) {
+			return updateAnswer(state, questionId, (currentAnswer) =>
+				setCustomSelected(currentAnswer, !answer.customSelected)
+			);
+		}
+	}
+	return setView(state, inputView(questionId));
+}
+
 function saveInputValue(
 	state: AskState,
 	rawValue: string,
@@ -239,7 +257,10 @@ function saveInputValue(
 				question.type === "multi" ? "multi" : "single"
 			)
 	);
-	if (!(submit && isAnswerAnswered(nextState.answers[question.id]))) {
+	if (
+		question.type === "multi" ||
+		!(submit && isAnswerAnswered(nextState.answers[question.id]))
+	) {
 		return nextState;
 	}
 	return advanceToNextTab(nextState);

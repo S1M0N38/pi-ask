@@ -5,6 +5,7 @@ import { getRenderableOptions } from "../src/state/selectors.ts";
 import {
 	applyNumberShortcut,
 	enterQuestionNoteMode,
+	submitCustomAnswer,
 } from "../src/state/transitions.ts";
 import { buildQuestionScreenModel } from "../src/ui/view-models/question.ts";
 
@@ -53,6 +54,26 @@ test("question view model marks active custom option as inline editor", () => {
 	assert.equal(model.mode, "standard");
 	assert.equal(model.rows[1]?.detail?.kind, "editor");
 	assert.equal(model.rows[1]?.detail?.placeholder, "Type answer...");
+});
+
+test("question view model marks multi custom answer as checked", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick many",
+				type: "multi",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+	state = applyNumberShortcut(state, 2);
+	state = submitCustomAnswer(state, "Other answer");
+
+	const model = buildQuestionScreenModel(buildContext(state));
+	assert.equal(model.rows[1]?.prefix, "[x] ");
+	assert.equal(model.rows[1]?.color, "success");
+	assert.equal(model.rows[1]?.detail?.kind, "custom-text");
 });
 
 test("question view model exposes saved question notes", () => {

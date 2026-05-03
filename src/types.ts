@@ -46,6 +46,7 @@ export interface AskSelectedOption {
 }
 
 export interface AskStateAnswer {
+	customSelected?: boolean;
 	customText?: string;
 	note?: string;
 	optionNotes?: Record<string, string>;

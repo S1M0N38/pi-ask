@@ -17,6 +17,7 @@ export function emptyAnswer(): AskStateAnswer {
 export function cloneAnswer(answer: AskStateAnswer): AskStateAnswer {
 	return {
 		selected: answer.selected.map(cloneSelection),
+		customSelected: answer.customSelected,
 		customText: answer.customText,
 		note: answer.note,
 		optionNotes: answer.optionNotes ? { ...answer.optionNotes } : undefined,
@@ -87,10 +88,21 @@ export function saveCustomText(
 		next.selected = [];
 	}
 	if (!trimmed) {
+		next.customSelected = undefined;
 		next.customText = undefined;
 		return next;
 	}
+	next.customSelected = true;
 	next.customText = rawValue;
+	return next;
+}
+
+export function setCustomSelected(
+	answer: AskStateAnswer,
+	selected: boolean
+): AskStateAnswer {
+	const next = cloneAnswer(answer);
+	next.customSelected = selected || undefined;
 	return next;
 }
 
@@ -137,7 +149,10 @@ export function isAnswerAnswered(answer?: AskStateAnswer): boolean {
 	if (!answer) {
 		return false;
 	}
-	return answer.selected.length > 0 || !!answer.customText?.trim();
+	return (
+		answer.selected.length > 0 ||
+		!!(answer.customSelected && answer.customText?.trim())
+	);
 }
 
 export function hasAnswerNotes(answer?: AskStateAnswer): boolean {
@@ -178,13 +193,16 @@ export function isOptionSelected(
 }
 
 export function serializeAnswer(answer: AskStateAnswer): AskResultAnswer {
+	const selectedCustomText = answer.customSelected
+		? answer.customText
+		: undefined;
 	const values = [
 		...answer.selected.map((selection) => selection.value),
-		...(answer.customText ? [answer.customText] : []),
+		...(selectedCustomText ? [selectedCustomText] : []),
 	];
 	const labels = [
 		...answer.selected.map((selection) => selection.label),
-		...(answer.customText ? [answer.customText] : []),
+		...(selectedCustomText ? [selectedCustomText] : []),
 	];
 	const indices = answer.selected.map((selection) => selection.index);
 	const selectedNotes = answer.optionNotes
@@ -202,7 +220,7 @@ export function serializeAnswer(answer: AskStateAnswer): AskResultAnswer {
 		values,
 		labels,
 		indices,
-		customText: answer.customText,
+		customText: selectedCustomText,
 		note: answer.note,
 		optionNotes:
 			selectedNotes && Object.keys(selectedNotes).length > 0

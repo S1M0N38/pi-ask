@@ -88,7 +88,7 @@ function buildOptionRowModel(
 	const answer = getAnswer(state, question.id);
 	const selected = index === state.activeOptionIndex;
 	const answered = option.isCustomOption
-		? !!answer?.customText
+		? !!(answer?.customSelected && answer.customText?.trim())
 		: isOptionSelected(answer, option.value);
 	const pointer = getOptionPointer(option, selected);
 	return {
@@ -180,10 +180,10 @@ function getPreviewLayout(
 
 function getOptionPrefix(
 	questionType: QuestionRenderContext["question"]["type"],
-	option: AskDisplayOption,
+	_option: AskDisplayOption,
 	answered: boolean
 ): string {
-	if (questionType !== "multi" || option.isCustomOption) {
+	if (questionType !== "multi") {
 		return "";
 	}
 	return `[${answered ? "x" : " "}] `;

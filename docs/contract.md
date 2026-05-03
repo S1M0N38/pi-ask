@@ -172,6 +172,8 @@ This document defines the stable external behavior. It does not explain internal
 - on single-select questions, saving free-form text clears selected options for that question
 - on multi-select questions, `values` and `labels` include both selected options and `customText` when both are present
 - on multi-select questions, selected options keep their original order and `customText` is appended last
+- submitting free-form text on a multi-select question stays on the same question tab and marks the custom row selected
+- on multi-select questions, toggling an empty custom row opens the free-form editor, while toggling a custom row with saved free-form text selects or deselects it without opening the editor or clearing the text
 - saving or clearing free-form text on a multi-select question does not clear other selected options
 - `note` stores a question-level note
 - `optionNotes` includes only notes for selected options
