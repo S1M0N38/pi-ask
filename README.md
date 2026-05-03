@@ -4,7 +4,9 @@
 
 It lets an agent pause, ask structured questions in a terminal UI, and continue with normalized answers instead of guessing.
 
-https://github.com/user-attachments/assets/a8503ca9-afcb-4c31-9edc-353b985a0209
+![pi-ask demo](docs/media/pi-ask-demo.gif)
+
+[Link to high-quality video](https://github.com/user-attachments/assets/a8503ca9-afcb-4c31-9edc-353b985a0209)
 
 
 ## Install
