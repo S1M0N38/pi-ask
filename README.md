@@ -1,3 +1,5 @@
+![pi-ask main image](docs/media/pi-ask-main.png)
+
 # @eko24ive/pi-ask
 
 [![npm downloads](https://badgen.net/npm/dm/@eko24ive/pi-ask)](https://www.npmjs.com/package/@eko24ive/pi-ask)
