@@ -54,7 +54,11 @@ export function toAskResult(state: AskState): AskResult {
 			id: question.id,
 			label: question.label,
 			prompt: question.prompt,
-			type: question.type,
+			type: question.requestedType ?? question.type,
+			...(question.presentedType &&
+			question.presentedType !== question.requestedType
+				? { presentedType: question.presentedType }
+				: {}),
 		})),
 		answers,
 		continuation:
@@ -186,7 +190,11 @@ function createElaborationQuestionContext(
 		id: question.id,
 		label: question.label,
 		prompt: question.prompt,
-		type: question.type,
+		type: question.requestedType ?? question.type,
+		...(question.presentedType &&
+		question.presentedType !== question.requestedType
+			? { presentedType: question.presentedType }
+			: {}),
 		options: question.options.map(cloneOption),
 	};
 }

@@ -94,6 +94,7 @@ export const DEFAULT_ASK_KEYMAPS: AskConfigKeymaps = {
 	main: {
 		confirm: ["enter"],
 		cancel: ["esc"],
+		changeQuestionType: ["t"],
 		toggle: ["space"],
 		nextTab: ["tab", "right"],
 		previousTab: ["shift+tab", "left"],
@@ -134,6 +135,7 @@ const DESCRIPTIONS: Record<AskKeymapContext, Record<string, string>> = {
 	main: {
 		confirm: "Confirm selection, continue, or submit",
 		cancel: "Cancel flow",
+		changeQuestionType: "Change current question type",
 		toggle: "Toggle selected option",
 		nextTab: "Switch to next tab",
 		previousTab: "Switch to previous tab",
@@ -171,6 +173,8 @@ const footerHint = (
 	action: string,
 	label = binding.label
 ) => `${label} ${action}`;
+
+const footerKeyIdLabel = (binding: AskKeyBinding) => binding.keys.join(" / ");
 
 export function formatKeybindingLabel(key: string): string {
 	if (key === "up") {
@@ -336,6 +340,11 @@ export function renderFooterKeymaps(
 			footerHint(main.nextTab, "tab", tabNavigationLabel),
 			footerHint(main.previousOption, "select", optionNavigationLabel),
 			footerHint(main.toggle, "toggle"),
+			footerHint(
+				main.changeQuestionType,
+				"question type",
+				footerKeyIdLabel(main.changeQuestionType)
+			),
 			footerHint(main.confirm, "continue"),
 			footerHint(main.optionNote, "note", noteNavigationLabel),
 			footerHint(main.cancel, "dismiss"),
@@ -344,6 +353,11 @@ export function renderFooterKeymaps(
 		default: [
 			footerHint(main.nextTab, "tab", tabNavigationLabel),
 			footerHint(main.previousOption, "select", optionNavigationLabel),
+			footerHint(
+				main.changeQuestionType,
+				"question type",
+				footerKeyIdLabel(main.changeQuestionType)
+			),
 			footerHint(main.confirm, "confirm"),
 			footerHint(main.optionNote, "note", noteNavigationLabel),
 			footerHint(main.cancel, "dismiss"),
@@ -607,6 +621,7 @@ function cloneKeymaps(keymaps: AskConfigKeymaps): AskConfigKeymaps {
 		main: {
 			confirm: [...keymaps.main.confirm],
 			cancel: [...keymaps.main.cancel],
+			changeQuestionType: [...keymaps.main.changeQuestionType],
 			toggle: [...keymaps.main.toggle],
 			nextTab: [...keymaps.main.nextTab],
 			previousTab: [...keymaps.main.previousTab],

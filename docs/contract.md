@@ -61,6 +61,7 @@ This document defines the stable external behavior. It does not explain internal
       label: string;
       prompt: string;
       type: "single" | "multi" | "preview";
+      presentedType?: "single" | "multi" | "preview";
     }>;
     answers: Record<
       string,
@@ -99,6 +100,7 @@ This document defines the stable external behavior. It does not explain internal
               label: string;
               prompt: string;
               type: "single" | "multi" | "preview";
+              presentedType?: "single" | "multi" | "preview";
               options: Array<{
                 value: string;
                 label: string;
@@ -124,6 +126,7 @@ This document defines the stable external behavior. It does not explain internal
               label: string;
               prompt: string;
               type: "single" | "multi" | "preview";
+              presentedType?: "single" | "multi" | "preview";
               options: Array<{
                 value: string;
                 label: string;
@@ -167,6 +170,7 @@ This document defines the stable external behavior. It does not explain internal
 - `continuation.affectedQuestionIds` lists the only questions that should be revisited
 - `continuation.questionStates` marks each question as `answered`, `needs_clarification`, or `unanswered`
 - single-select answers still use arrays
+- when `behaviour.presentSingleAsMulti` is enabled, requested single-select questions are presented and handled as multi-select in future/replayed ask flows; result question metadata keeps the requested `type`, adds `presentedType` when final presentation differs, and result text uses one compact note when any answered questions were presented differently
 - `indices` are 1-based rendered option positions
 - `customText` stores the free-form answer
 - on single-select questions, saving free-form text clears selected options for that question
@@ -193,6 +197,7 @@ This document defines the stable external behavior. It does not explain internal
 
 - tabbed multi-question flow
 - single-select, multi-select, and preview questions
+- active question type changes via configurable `main.changeQuestionType` hotkey, default `t`; non-preview questions toggle `single <-> multi`; preview questions toggle `preview <-> multi`
 - inline free-form answers for all question types
 - native pi-style `@` file path autocomplete inside free-form answer and note editors
 - question notes via `Shift+N`
@@ -208,7 +213,7 @@ This document defines the stable external behavior. It does not explain internal
 - `/ask:replay` command to replay the latest real `ask_user` form on the current branch
 - ask settings list with binary behaviour/notification toggles and a guarded reset-to-defaults action
 - `?` in the ask flow and `/ask-settings` in pi open the same lightweight ask settings overlay
-- settings persist immediately when changed: `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, `Notifications`, and `Show footer hints`; resetting config to defaults requires pressing the reset action twice within a short confirmation window
+- settings persist immediately when changed: `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, `Notifications`, and `Show footer hints`; `Present single-select as multi-select` persists immediately but applies only to new/replayed ask flows; resetting config to defaults requires pressing the reset action twice within a short confirmation window
 - `Keymaps` is a persisted, context-aware config section for global, main-flow, editor, note-editor, and settings-modal actions
 - the settings list shows the absolute config file path for customizing keymaps, notifications, and extraction settings
 - if the flow is already on the review tab, all questions are answered, and no notes exist, enabling auto-submit can complete the current ask flow immediately
@@ -223,6 +228,7 @@ Main flow:
 - `main.nextTab` / `main.previousTab` move between tabs; defaults: `Tab`/`Right`, `Shift+Tab`/`Left`
 - `main.nextOption` / `main.previousOption` move between options or review actions; defaults: `Down`, `Up`
 - `main.confirm`, `main.cancel`, and `main.toggle` confirm, cancel, or toggle; defaults: `Enter`, `Esc`, `Space`
+- `main.changeQuestionType` changes the active question type (non-preview: `single <-> multi`; preview: `preview <-> multi`); default: `t`; destructive `multi -> single` changes require pressing the type hotkey again, with no timeout, and the pending confirmation clears on other navigation/actions
 - `main.optionNote` and `main.questionNote` open option/question notes; defaults: `n`, `Shift+N`
 - `1..9` is fixed and selects or toggles the matching option; on the review tab, `1`, `2`, and `3` trigger `Submit`, `Elaborate`, and `Cancel`
 - when `Double-press review shortcuts` is enabled, review-tab `1`, `2`, and `3` require the same key twice without a timeout, and the review screen shows an inline hint for the pending action
@@ -255,7 +261,7 @@ If `ctx.hasUI === false`, the tool returns a `Needs user input` message in `cont
 
 Validation is handled inside the tool so malformed calls produce the same structured error shape as other invalid payloads instead of relying on pre-execution schema failures.
 
-The ask flow subscribes to runtime settings updates while open. In practice, this means changing `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, `Notifications`, `Show footer hints`, resetting config to defaults, or reloading config-backed keymaps can affect the in-progress ask flow immediately instead of only future asks.
+The ask flow subscribes to runtime settings updates while open. In practice, this means changing `Auto-submit when answered without notes`, `Confirm dismiss when dirty`, `Double-press review shortcuts`, `Notifications`, `Show footer hints`, resetting config to defaults, or reloading config-backed keymaps can affect the in-progress ask flow immediately instead of only future asks. `Present single-select as multi-select` is applied when an ask flow is created and does not rewrite question semantics for an already-open flow; use `main.changeQuestionType` for live per-question changes.
 
 ## Notifications
 

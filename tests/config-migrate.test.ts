@@ -19,7 +19,7 @@ test("config migration framework accepts the current schema version", () => {
 	assert.deepEqual(result.config, DEFAULT_ASK_CONFIG);
 });
 
-test("config migration maps previous-version config files into v4 shape", () => {
+test("config migration maps previous-version config files into current shape", () => {
 	const legacyKeymaps = {
 		cancel: "q",
 		confirm: "ctrl+k",
@@ -75,6 +75,34 @@ test("config migration maps previous-version config files into v4 shape", () => 
 			name
 		);
 	}
+});
+
+test("config migration adds v5 defaults to v4 configs", () => {
+	const v4MainKeymaps = Object.fromEntries(
+		Object.entries(DEFAULT_ASK_CONFIG.keymaps.main).filter(
+			([key]) => key !== "changeQuestionType"
+		)
+	);
+	const result = migrateAskConfig({
+		schemaVersion: 4,
+		answer: DEFAULT_ASK_CONFIG.answer,
+		behaviour: {
+			autoSubmitWhenAnsweredWithoutNotes: true,
+			confirmDismissWhenDirty: true,
+			doublePressReviewShortcuts: true,
+			showFooterHints: false,
+		},
+		keymaps: {
+			...DEFAULT_ASK_CONFIG.keymaps,
+			main: v4MainKeymaps,
+		},
+		notifications: DEFAULT_ASK_CONFIG.notifications,
+	});
+
+	assert.equal(result.migrated, true);
+	assert.equal(result.config.behaviour.presentSingleAsMulti, false);
+	assert.equal(result.config.behaviour.showFooterHints, false);
+	assert.deepEqual(result.config.keymaps.main.changeQuestionType, ["t"]);
 });
 
 test("config migration maps legacy flat keymaps into context keymaps", () => {

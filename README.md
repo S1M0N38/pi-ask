@@ -113,13 +113,13 @@ Fixed bindings:
 | `@` | Editors | File-reference affordance |
 | Arrow keys / `Tab` | Non-empty editor | Stay in editor for cursor movement |
 
-Review-tab shortcuts can optionally require the same number key twice via `behaviour.doublePressReviewShortcuts`.
+Review-tab shortcuts can optionally require the same number key twice via `behaviour.doublePressReviewShortcuts`. `behaviour.presentSingleAsMulti` can render future single-select questions as multi-select while preserving the requested type in results; use `main.changeQuestionType` (`t` by default) to change the active question type live.
 
 You can edit the config file yourself, ask pi to edit it for you, or use `/ask-settings` to find the exact config path, toggle behaviour/notification settings, or reset config to defaults with a guarded double press.
 
 ```json
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "answer": {
     "extractionModels": [
       { "provider": "openai-codex", "id": "gpt-5.4-mini" },
@@ -133,6 +133,7 @@ You can edit the config file yourself, ask pi to edit it for you, or use `/ask-s
     "autoSubmitWhenAnsweredWithoutNotes": false,
     "confirmDismissWhenDirty": true,
     "doublePressReviewShortcuts": true,
+    "presentSingleAsMulti": false,
     "showFooterHints": true
   },
   "keymaps": {
@@ -141,6 +142,7 @@ You can edit the config file yourself, ask pi to edit it for you, or use `/ask-s
       "confirm": ["enter"],
       "cancel": ["esc"],
       "toggle": ["space"],
+      "changeQuestionType": ["t"],
       "nextTab": ["tab", "right"],
       "previousTab": ["shift+tab", "left"],
       "nextOption": ["down"],

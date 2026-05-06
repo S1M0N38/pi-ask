@@ -35,6 +35,8 @@ export interface AskValidationError {
 export interface AskQuestion
 	extends Omit<AskQuestionInput, "type" | "required" | "label"> {
 	label: string;
+	presentedType?: AskQuestionType;
+	requestedType?: AskQuestionType;
 	required: boolean;
 	type: AskQuestionType;
 }
@@ -65,6 +67,7 @@ export interface AskResultAnswer {
 export interface AskQuestionSummary {
 	id: string;
 	label: string;
+	presentedType?: AskQuestionType;
 	prompt: string;
 	type: AskQuestionType;
 }

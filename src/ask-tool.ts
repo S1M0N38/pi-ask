@@ -13,6 +13,7 @@ import {
 	successfulResponse,
 	validateParams,
 } from "./ask-tool-helpers.ts";
+import { getAskConfigStore } from "./config/store.ts";
 import { AskParamsSchema } from "./schema.ts";
 import type { AskParams } from "./types.ts";
 import { runAskFlow } from "./ui/controller.ts";
@@ -48,7 +49,10 @@ async function executeAskTool(
 	_onUpdate: unknown,
 	ctx: ExtensionContext
 ) {
-	const validation = validateParams(params);
+	const config = await getAskConfigStore().getConfig();
+	const validation = validateParams(params, {
+		presentSingleAsMulti: config.behaviour.presentSingleAsMulti,
+	});
 	if (!validation.ok) {
 		return invalidPayloadResponse(params, validation.issues);
 	}

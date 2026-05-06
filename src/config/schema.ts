@@ -21,7 +21,7 @@ const AskKeyBindingSchema = Type.Union([
 	Type.Array(Type.String()),
 ]);
 
-const AskConfigKeymapsSchema = Type.Object({
+const AskConfigKeymapsV4Schema = Type.Object({
 	global: Type.Object({
 		dismiss: Type.Optional(AskKeyBindingSchema),
 		settings: Type.Optional(AskKeyBindingSchema),
@@ -61,6 +61,76 @@ const AskConfigKeymapsSchema = Type.Object({
 	}),
 });
 
+const AskConfigKeymapsSchema = Type.Object({
+	global: Type.Object({
+		dismiss: Type.Optional(AskKeyBindingSchema),
+		settings: Type.Optional(AskKeyBindingSchema),
+	}),
+	main: Type.Object({
+		cancel: Type.Optional(AskKeyBindingSchema),
+		changeQuestionType: Type.Optional(AskKeyBindingSchema),
+		confirm: Type.Optional(AskKeyBindingSchema),
+		nextOption: Type.Optional(AskKeyBindingSchema),
+		nextTab: Type.Optional(AskKeyBindingSchema),
+		optionNote: Type.Optional(AskKeyBindingSchema),
+		previousOption: Type.Optional(AskKeyBindingSchema),
+		previousTab: Type.Optional(AskKeyBindingSchema),
+		questionNote: Type.Optional(AskKeyBindingSchema),
+		toggle: Type.Optional(AskKeyBindingSchema),
+	}),
+	editor: Type.Object({
+		close: Type.Optional(AskKeyBindingSchema),
+		nextOptionWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		nextTabWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		previousOptionWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		previousTabWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		submit: Type.Optional(AskKeyBindingSchema),
+	}),
+	noteEditor: Type.Object({
+		close: Type.Optional(AskKeyBindingSchema),
+		nextOptionWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		nextTabWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		previousOptionWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		previousTabWhenEmpty: Type.Optional(AskKeyBindingSchema),
+		save: Type.Optional(AskKeyBindingSchema),
+	}),
+	settingsModal: Type.Object({
+		close: Type.Optional(AskKeyBindingSchema),
+		nextOption: Type.Optional(AskKeyBindingSchema),
+		previousOption: Type.Optional(AskKeyBindingSchema),
+		toggle: Type.Optional(AskKeyBindingSchema),
+	}),
+});
+
+export const AskConfigFileV5Schema = Type.Object({
+	schemaVersion: Type.Literal(5),
+	answer: Type.Optional(
+		Type.Object({
+			extractionModels: Type.Optional(
+				Type.Array(AskAnswerModelPreferenceSchema)
+			),
+			extractionRetries: Type.Optional(Type.Number()),
+			extractionTimeoutMs: Type.Optional(Type.Number()),
+		})
+	),
+	behaviour: Type.Optional(
+		Type.Object({
+			autoSubmitWhenAnsweredWithoutNotes: Type.Optional(Type.Boolean()),
+			confirmDismissWhenDirty: Type.Optional(Type.Boolean()),
+			doublePressReviewShortcuts: Type.Optional(Type.Boolean()),
+			presentSingleAsMulti: Type.Optional(Type.Boolean()),
+			showFooterHints: Type.Optional(Type.Boolean()),
+		})
+	),
+	keymaps: Type.Optional(AskConfigKeymapsSchema),
+	notifications: Type.Optional(
+		Type.Object({
+			channels: Type.Optional(Type.Array(AskNotificationChannelSchema)),
+			enabled: Type.Optional(Type.Boolean()),
+		})
+	),
+});
+
 export const AskConfigFileV4Schema = Type.Object({
 	schemaVersion: Type.Literal(4),
 	answer: Type.Optional(
@@ -80,7 +150,7 @@ export const AskConfigFileV4Schema = Type.Object({
 			showFooterHints: Type.Optional(Type.Boolean()),
 		})
 	),
-	keymaps: Type.Optional(AskConfigKeymapsSchema),
+	keymaps: Type.Optional(AskConfigKeymapsV4Schema),
 	notifications: Type.Optional(
 		Type.Object({
 			channels: Type.Optional(Type.Array(AskNotificationChannelSchema)),
@@ -131,6 +201,7 @@ export const AskConfigFileV2Schema = Type.Omit(AskConfigFileV3Schema, [
 	"schemaVersion",
 ]);
 
+export type AskConfigFileV5 = Static<typeof AskConfigFileV5Schema>;
 export type AskConfigFileV4 = Static<typeof AskConfigFileV4Schema>;
 export type AskConfigFileV3 = Static<typeof AskConfigFileV3Schema>;
 export type AskConfigFileV2 = Static<typeof AskConfigFileV2Schema> & {
@@ -167,6 +238,7 @@ export interface AskConfigKeymaps {
 	};
 	main: {
 		cancel: string[];
+		changeQuestionType: string[];
 		confirm: string[];
 		nextOption: string[];
 		nextTab: string[];
@@ -202,6 +274,7 @@ export interface AskConfig {
 		autoSubmitWhenAnsweredWithoutNotes: boolean;
 		confirmDismissWhenDirty: boolean;
 		doublePressReviewShortcuts: boolean;
+		presentSingleAsMulti: boolean;
 		showFooterHints: boolean;
 	};
 	keymaps: AskConfigKeymaps;
@@ -211,4 +284,4 @@ export interface AskConfig {
 	};
 }
 
-export const validateAskConfigFileV4 = Compile(AskConfigFileV4Schema);
+export const validateAskConfigFileV5 = Compile(AskConfigFileV5Schema);

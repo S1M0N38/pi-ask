@@ -28,7 +28,7 @@ Unsupported future versions or invalid files are backed up and defaults are load
 
 ```json
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "answer": {
     "extractionModels": [
       { "provider": "openai-codex", "id": "gpt-5.4-mini" },
@@ -42,6 +42,7 @@ Unsupported future versions or invalid files are backed up and defaults are load
     "autoSubmitWhenAnsweredWithoutNotes": false,
     "confirmDismissWhenDirty": true,
     "doublePressReviewShortcuts": true,
+    "presentSingleAsMulti": false,
     "showFooterHints": true
   },
   "keymaps": {
@@ -50,6 +51,7 @@ Unsupported future versions or invalid files are backed up and defaults are load
       "confirm": ["enter"],
       "cancel": ["esc"],
       "toggle": ["space"],
+      "changeQuestionType": ["t"],
       "nextTab": ["tab", "right"],
       "previousTab": ["shift+tab", "left"],
       "nextOption": ["down"],
@@ -133,6 +135,16 @@ These settings affect only the `/answer` command. Normal `ask_user` tool calls d
 - effect: when enabled, review-tab number shortcuts (`1`, `2`, `3`) only trigger after pressing the same key twice
 - the review screen shows an inline hint and keeps the pending shortcut armed until another review shortcut is pressed or the user leaves the tab
 
+### `behaviour.presentSingleAsMulti`
+
+- type: boolean
+- default: `false`
+- effect: future ask flows render requested `single` questions as `multi` questions
+- result: the question keeps `type: "single"` and adds `presentedType: "multi"`; result text uses one compact note when any answered questions were presented differently
+- scope: this is a default presentation policy for new/replayed ask flows; it is not hot-applied to the current ask flow
+- current-flow override: use the configurable main-flow `changeQuestionType` hotkey (default `t`) to change the active question type live: non-preview questions toggle `single <-> multi`; preview questions toggle `preview <-> multi`
+- destructive confirmation: changing `multi -> single` with multiple selected answers requires pressing the type hotkey again; the pending confirmation has no timeout and clears when another navigation/action is used
+
 ### `behaviour.showFooterHints`
 
 - type: boolean
@@ -201,6 +213,7 @@ Arrays are aliases: any listed key triggers the same action.
   "main": {
     "confirm": ["enter"],
     "cancel": ["esc"],
+    "changeQuestionType": ["t"],
     "toggle": ["space"],
     "nextTab": ["tab", "right"],
     "previousTab": ["shift+tab", "left"],
@@ -307,7 +320,7 @@ Invalid keymaps include:
 
 ```json
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "answer": {
     "extractionRetries": 1,
     "extractionTimeoutMs": 30000,
@@ -319,6 +332,7 @@ Invalid keymaps include:
     "autoSubmitWhenAnsweredWithoutNotes": true,
     "confirmDismissWhenDirty": true,
     "doublePressReviewShortcuts": true,
+    "presentSingleAsMulti": false,
     "showFooterHints": false
   },
   "keymaps": {
@@ -330,6 +344,7 @@ Invalid keymaps include:
       "confirm": ["ctrl+k"],
       "cancel": ["q"],
       "toggle": ["ctrl+t"],
+      "changeQuestionType": ["t"],
       "nextTab": ["tab", "right"],
       "previousTab": ["shift+tab", "left"],
       "nextOption": ["down"],
@@ -377,7 +392,7 @@ Invalid keymaps include:
 When editing this config for a user:
 
 - preserve unrelated fields
-- keep `schemaVersion` at `4`
+- keep `schemaVersion` at `5`
 - preserve `answer.extractionModels` as explicit provider/id pairs
 - keep `answer.extractionRetries` between `0` and `3`
 - do not assign fixed numeric shortcuts (`1` through `9`) to configurable actions

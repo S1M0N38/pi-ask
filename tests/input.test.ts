@@ -190,6 +190,35 @@ test("question mark opens ask settings outside non-empty editors", () => {
 	});
 });
 
+test("question type shortcut uses configured main keymap", () => {
+	const state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Question?",
+				options: [{ value: "a", label: "A" }],
+			},
+		],
+	});
+	const config = {
+		...DEFAULT_ASK_CONFIG,
+		keymaps: {
+			...DEFAULT_ASK_CONFIG.keymaps,
+			main: {
+				...DEFAULT_ASK_CONFIG.keymaps.main,
+				changeQuestionType: ["ctrl+t"],
+			},
+		},
+	};
+
+	assert.deepEqual(getInputCommand(state, DEFAULT_ASK_CONFIG, "t"), {
+		kind: "changeQuestionType",
+	});
+	assert.deepEqual(getInputCommand(state, config, "\u0014"), {
+		kind: "changeQuestionType",
+	});
+});
+
 test("note shortcuts use n for option notes and Shift+N for question notes", () => {
 	const navigation = createInitialState({
 		questions: [

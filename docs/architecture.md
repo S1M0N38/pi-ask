@@ -67,6 +67,8 @@ The codebase is split so the implementation reads through file boundaries and na
 
 - submit is never blocked by unanswered questions
 - single-select answers serialize as arrays
+- when `behaviour.presentSingleAsMulti` is enabled, future single-select questions are handled with multi-select state semantics while result metadata preserves the requested `type` and adds `presentedType`
+- active-flow question type changes are per-question runtime overrides handled in state/controller logic; they do not mutate the stored source payload or global config
 - single-select free-form answers replace selected options for that question
 - multi-select free-form answers augment selected options instead of clearing them
 - preview questions keep their preview-pane behavior while also supporting the synthetic custom-answer option
@@ -79,6 +81,8 @@ The codebase is split so the implementation reads through file boundaries and na
 - invalid persisted keymaps fall back to default keymaps for the current session without discarding valid behaviour, notification, or answer settings
 - invalid notification channels are skipped and fall back to the default bell channel if none are valid
 - ask settings behaviour and notification enabled changes persist immediately from the settings list; config reset is guarded by a short double-press confirmation
+- `presentSingleAsMulti` is applied at ask-flow creation; toggling it does not rewrite already-normalized questions in an open flow
+- `main.changeQuestionType` changes the active question type live (non-preview: `single <-> multi`; preview: `preview <-> multi`) and may require confirmation before destructive multi-to-single conversion
 - when the ask config file is missing, the first ask use writes a default persisted config snapshot under `~/.pi/agent/extensions/`
 - legacy root config files move into `~/.pi/agent/extensions/` only when the current config file is absent
 - live config updates can affect an in-progress ask flow immediately

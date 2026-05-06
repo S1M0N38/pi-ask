@@ -13,6 +13,7 @@ import {
 	submitEditorDraft,
 	syncStateToSelection,
 } from "../state/editor.ts";
+import { cycleCurrentQuestionType } from "../state/question-type.ts";
 import { toAskResult } from "../state/result.ts";
 import {
 	getCurrentOption,
@@ -58,6 +59,7 @@ type Keybindings = CustomCallbackArgs[2];
 type Done = (result: AskResult) => void;
 interface AskFlowOptions {
 	allowFreeform?: boolean;
+	presentSingleAsMulti?: boolean;
 }
 
 type AskFlowParams = AskParams &
@@ -73,6 +75,7 @@ interface AskFlowController {
 	dismissNotice?: string;
 	done: Done;
 	editor: Editor;
+	pendingQuestionTypeChangeQuestionId?: string;
 	pendingReviewShortcutActionIndex?: number;
 	settingsOpen: boolean;
 	state: AskState;
@@ -89,13 +92,18 @@ export async function runAskFlow(
 ): Promise<AskResult> {
 	const store = getAskConfigStore();
 	const config = await store.getConfig();
+	const flowOptions = {
+		...options,
+		presentSingleAsMulti:
+			options.presentSingleAsMulti ?? config.behaviour.presentSingleAsMulti,
+	};
 	return ctx.ui.custom<AskResult>((...args) =>
 		createAskFlowController(args, {
 			...params,
 			config,
 			cwd: ctx.cwd,
 			ctx,
-			flowOptions: options,
+			flowOptions,
 		})
 	);
 }
@@ -118,6 +126,7 @@ function createAskFlowController(
 		settingsOpen: false,
 		state: createInitialState(params, params.flowOptions),
 		suppressAutoInputForSelection: false,
+		pendingQuestionTypeChangeQuestionId: undefined,
 		pendingReviewShortcutActionIndex: undefined,
 		theme,
 		tui,
@@ -238,30 +247,41 @@ function handleNavigationCommand(
 	switch (command.kind) {
 		case "moveTab":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			commitState(controller, moveTab(controller.state, command.delta));
 			return;
 		case "moveOption":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			commitState(controller, moveOption(controller.state, command.delta));
 			return;
 		case "toggleMulti":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			handleToggleCurrentOption(controller);
 			return;
+		case "changeQuestionType":
+			clearReviewShortcutPending(controller);
+			handleChangeQuestionType(controller);
+			return;
 		case "openQuestionNote":
+			clearQuestionTypeChangePending(controller);
 			openQuestionNote(controller);
 			return;
 		case "openOptionNote":
+			clearQuestionTypeChangePending(controller);
 			openOptionNote(controller);
 			return;
 		case "confirm":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			commitState(controller, confirmCurrentSelection(controller.state), {
 				finish: true,
 			});
 			return;
 		case "cancel":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			handleExitFlow(controller, cancelFlow(controller.state));
 			return;
 		case "numberShortcut":
@@ -269,6 +289,7 @@ function handleNavigationCommand(
 				return;
 			}
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			commitState(
 				controller,
 				applyNumberShortcut(controller.state, command.digit)
@@ -276,6 +297,7 @@ function handleNavigationCommand(
 			return;
 		case "dismiss":
 			clearReviewShortcutPending(controller);
+			clearQuestionTypeChangePending(controller);
 			handleExitFlow(controller, dismissFlow(controller.state));
 			return;
 		case "showSettings":
@@ -299,6 +321,24 @@ function handleToggleCurrentOption(controller: AskFlowController) {
 		return;
 	}
 	commitState(controller, toggleCurrentMultiOption(controller.state));
+}
+
+function handleChangeQuestionType(controller: AskFlowController) {
+	const question = getCurrentQuestion(controller.state);
+	if (!question || isSubmitTab(controller.state)) {
+		return;
+	}
+	const confirmed =
+		controller.pendingQuestionTypeChangeQuestionId === question.id;
+	const result = cycleCurrentQuestionType(controller.state, { confirmed });
+	controller.dismissNotice = result.notice;
+	if (result.needsConfirmation) {
+		controller.pendingQuestionTypeChangeQuestionId = question.id;
+		refresh(controller);
+		return;
+	}
+	clearQuestionTypeChangePending(controller);
+	commitState(controller, result.state, { finish: true });
 }
 
 function openQuestionNote(controller: AskFlowController) {
@@ -413,6 +453,10 @@ function clearDismissNotice(controller: AskFlowController) {
 
 function clearReviewShortcutPending(controller: AskFlowController) {
 	controller.pendingReviewShortcutActionIndex = undefined;
+}
+
+function clearQuestionTypeChangePending(controller: AskFlowController) {
+	controller.pendingQuestionTypeChangeQuestionId = undefined;
 }
 
 function getActiveReviewShortcutHint(

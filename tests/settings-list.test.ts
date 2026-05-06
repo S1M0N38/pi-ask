@@ -13,6 +13,7 @@ const savedConfig: AskConfig = {
 		autoSubmitWhenAnsweredWithoutNotes: false,
 		confirmDismissWhenDirty: true,
 		doublePressReviewShortcuts: true,
+		presentSingleAsMulti: false,
 		showFooterHints: true,
 	},
 	keymaps: DEFAULT_ASK_CONFIG.keymaps,
@@ -65,9 +66,12 @@ test("settings list renders behaviour settings and config path", () => {
 
 	assert(text.includes("╭"));
 	assert(text.includes("@eko24ive/pi-ask"));
+	assert(text.includes("Live settings"));
+	assert(text.includes("Defaults for future asks"));
 	assert(text.includes("Auto-submit when answered without notes"));
 	assert(text.includes("[off]"));
 	assert(text.includes("Confirm dismiss when dirty"));
+	assert(text.includes("Present single-select as multi-select"));
 	assert(text.includes("on"));
 	assert(text.includes("Edit this config file to customize"));
 	assert(text.includes("keymaps"));
@@ -107,6 +111,7 @@ test("settings list saves behaviour changes immediately without success feedback
 	assert.equal(saved?.behaviour.autoSubmitWhenAnsweredWithoutNotes, true);
 	assert.equal(saved?.behaviour.confirmDismissWhenDirty, true);
 	assert.equal(saved?.behaviour.doublePressReviewShortcuts, true);
+	assert.equal(saved?.behaviour.presentSingleAsMulti, false);
 	assert.equal(saved?.behaviour.showFooterHints, true);
 	assert.equal(text.includes("Saved"), false);
 });

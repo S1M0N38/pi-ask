@@ -7,9 +7,11 @@ import {
 	applyNumberShortcut,
 	enterOptionNoteMode,
 	enterQuestionNoteMode,
+	moveOption,
 	moveTab,
 	saveNote,
 	submitCustomAnswer,
+	toggleCurrentMultiOption,
 } from "../src/state/transitions.ts";
 
 test("summarizeResult formats selected answers", () => {
@@ -32,6 +34,104 @@ test("summarizeResult formats selected answers", () => {
 
 	assert.equal(summarizeResult(result), "Style: Rich");
 	assert.equal(renderResultText(result), "✓ Style: Rich");
+});
+
+test("single questions presented as multi preserve requested type in results", () => {
+	let state = createInitialState(
+		{
+			questions: [
+				{
+					id: "scope",
+					label: "Scope",
+					prompt: "What scope?",
+					options: [
+						{ value: "docs", label: "Docs" },
+						{ value: "tests", label: "Tests" },
+					],
+				},
+			],
+		},
+		{ presentSingleAsMulti: true }
+	);
+
+	state = toggleCurrentMultiOption(state);
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+	const result = toAskResult(state);
+
+	assert.deepEqual(result.questions, [
+		{
+			id: "scope",
+			label: "Scope",
+			prompt: "What scope?",
+			type: "single",
+			presentedType: "multi",
+		},
+	]);
+	assert.equal(
+		summarizeResult(result),
+		"Scope: Docs, Tests\nNote: Some questions were presented as multi-select by user preference."
+	);
+	assert.equal(
+		renderResultText(result),
+		"✓ Scope: Docs, Tests\n  Note: Some questions were presented as multi-select by user preference."
+	);
+});
+
+test("presentation override summary uses one compact note", () => {
+	const result = {
+		cancelled: false,
+		mode: "submit" as const,
+		questions: [
+			{
+				id: "apiStyle",
+				label: "Single Select",
+				prompt: "Pick one API style.",
+				type: "single" as const,
+				presentedType: "multi" as const,
+			},
+			{
+				id: "docsSections",
+				label: "Multi Select",
+				prompt: "Which docs sections should be updated?",
+				type: "multi" as const,
+			},
+			{
+				id: "layout",
+				label: "Preview",
+				prompt: "Choose a layout with preview content.",
+				type: "preview" as const,
+				presentedType: "multi" as const,
+			},
+		],
+		answers: {
+			apiStyle: {
+				values: ["rest", "graphql"],
+				labels: ["REST", "GraphQL"],
+				indices: [1, 2],
+			},
+			docsSections: {
+				values: ["readme", "contract", "architecture"],
+				labels: ["README", "Contract", "Architecture"],
+				indices: [1, 2, 3],
+			},
+			layout: {
+				values: ["compact", "detailed"],
+				labels: ["Compact", "Detailed"],
+				indices: [1, 2],
+			},
+		},
+	};
+
+	assert.equal(
+		summarizeResult(result),
+		[
+			"Single Select: REST, GraphQL",
+			"Multi Select: README, Contract, Architecture",
+			"Preview: Compact, Detailed",
+			"Note: Some questions were presented as multi-select by user preference.",
+		].join("\n")
+	);
 });
 
 test("summaries include custom text answers", () => {

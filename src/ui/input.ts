@@ -17,6 +17,7 @@ export type AskInputCommand =
 	| { kind: "openOptionNote" }
 	| { kind: "confirm" }
 	| { kind: "cancel" }
+	| { kind: "changeQuestionType" }
 	| { kind: "dismiss" }
 	| { kind: "showSettings" }
 	| { kind: "numberShortcut"; digit: number }
@@ -135,6 +136,9 @@ function getNavigationInputCommand(
 	}
 	if (matchesBinding(data, bindings.toggle)) {
 		return { kind: "toggleMulti" };
+	}
+	if (matchesBinding(data, bindings.changeQuestionType)) {
+		return { kind: "changeQuestionType" };
 	}
 	if (matchesBinding(data, bindings.confirm)) {
 		return { kind: "confirm" };

@@ -34,11 +34,33 @@ const DESCRIPTION_LINE_COUNT = 3;
 const COMPACT_WIDTH = 40;
 const RESET_CONFIRMATION_MS = 2000;
 
+type SettingSection = "Actions" | "Defaults for future asks" | "Live settings";
+type ToggleSettingKey = keyof AskConfig["behaviour"] | "notifications.enabled";
+
+interface BaseSetting {
+	description: string;
+	label: string;
+	section: SettingSection;
+}
+
+interface ActionSetting extends BaseSetting {
+	key: "resetConfig";
+	type: "action";
+}
+
+interface ToggleSetting extends BaseSetting {
+	key: ToggleSettingKey;
+	type: "toggle";
+}
+
+type Setting = ActionSetting | ToggleSetting;
+
 const SETTINGS = [
 	{
 		description:
 			"Auto-submit completed ask flows when no question or option notes were added.",
 		key: "autoSubmitWhenAnsweredWithoutNotes",
+		section: "Live settings",
 		label: "Auto-submit when answered without notes",
 		type: "toggle",
 	},
@@ -46,6 +68,7 @@ const SETTINGS = [
 		description:
 			"Require a second cancel or dismiss action before discarding answered or drafted ask content.",
 		key: "confirmDismissWhenDirty",
+		section: "Live settings",
 		label: "Confirm dismiss when dirty",
 		type: "toggle",
 	},
@@ -53,6 +76,7 @@ const SETTINGS = [
 		description:
 			"Require pressing 1, 2, or 3 twice on the review tab before triggering Submit, Elaborate, or Cancel.",
 		key: "doublePressReviewShortcuts",
+		section: "Live settings",
 		label: "Double-press review shortcuts",
 		type: "toggle",
 	},
@@ -60,26 +84,36 @@ const SETTINGS = [
 		description:
 			"Emit one external notification when the ask flow opens and waits for input.",
 		key: "notifications.enabled",
+		section: "Live settings",
 		label: "Notifications",
 		type: "toggle",
 	},
 	{
 		description: "Show footer keymap hints at the bottom of the ask flow.",
 		key: "showFooterHints",
+		section: "Live settings",
 		label: "Show footer hints",
+		type: "toggle",
+	},
+	{
+		description:
+			"Default new and replayed ask flows to render single-select questions as multi-select. This is not hot-applied to the current flow; use the type hotkey there.",
+		key: "presentSingleAsMulti",
+		section: "Defaults for future asks",
+		label: "Present single-select as multi-select",
 		type: "toggle",
 	},
 	{
 		description:
 			"Reset behaviour, keymaps, notifications, and extraction settings to defaults. Press twice quickly to confirm.",
 		key: "resetConfig",
+		section: "Actions",
 		label: "Reset config to defaults",
 		type: "action",
 	},
-] as const;
+] as const satisfies readonly Setting[];
 
-type Setting = (typeof SETTINGS)[number];
-type SettingKey = Extract<Setting, { type: "toggle" }>["key"];
+type SettingKey = ToggleSettingKey;
 
 export class AskSettingsList {
 	private closed = false;
@@ -152,10 +186,16 @@ export class AskSettingsList {
 		);
 
 		lines.push(this.line("", innerWidth));
+		let previousSection: string | undefined;
 		for (const [index, setting] of SETTINGS.entries()) {
-			if (setting.type === "action") {
-				lines.push(this.line("", innerWidth));
-				lines.push(this.line("", innerWidth));
+			if (setting.section !== previousSection) {
+				if (previousSection) {
+					lines.push(this.line("", innerWidth));
+				}
+				lines.push(
+					this.line(this.theme.fg("accent", ` ${setting.section}`), innerWidth)
+				);
+				previousSection = setting.section;
 			}
 			for (const settingLine of this.renderSetting(
 				setting,

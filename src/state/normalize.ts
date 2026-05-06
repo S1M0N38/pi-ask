@@ -13,6 +13,7 @@ interface IssueCollector {
 
 interface ValidationOptions {
 	allowFreeform?: boolean;
+	presentSingleAsMulti?: boolean;
 }
 
 export function normalizeQuestions(
@@ -23,7 +24,9 @@ export function normalizeQuestions(
 	if (issues.length > 0) {
 		throw new Error(issues[0]?.message ?? "Invalid ask_user payload");
 	}
-	return params.questions.map(normalizeQuestion);
+	return params.questions.map((question, index) =>
+		normalizeQuestion(question, index, options)
+	);
 }
 
 export function collectValidationIssues(
@@ -37,13 +40,22 @@ export function collectValidationIssues(
 
 function normalizeQuestion(
 	question: AskQuestionInput,
-	index: number
+	index: number,
+	options: ValidationOptions = {}
 ): AskQuestion {
+	const requestedType = normalizeQuestionType(question.type);
+	const presentedType =
+		options.presentSingleAsMulti && requestedType === "single"
+			? "multi"
+			: requestedType;
 	return {
 		id: question.id.trim(),
 		label: question.label?.trim() || `Q${index + 1}`,
 		prompt: question.prompt.trim(),
-		type: normalizeQuestionType(question.type),
+		type: presentedType,
+		...(presentedType === requestedType
+			? {}
+			: { requestedType, presentedType }),
 		required: question.required ?? false,
 		options: question.options.map(normalizeOption),
 	};

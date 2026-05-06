@@ -30,6 +30,7 @@ export const ASK_TOOL_PROMPT_GUIDELINES = [
 
 interface ValidateParamsOptions {
 	allowFreeform?: boolean;
+	presentSingleAsMulti?: boolean;
 }
 
 export function validateParams(

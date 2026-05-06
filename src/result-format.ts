@@ -8,6 +8,8 @@ export function formatResultLines(
 ): string[] {
 	const lines: string[] = [];
 
+	let hasPresentationOverride = false;
+
 	for (const question of result.questions) {
 		const answer = result.answers[question.id];
 		if (!answer) {
@@ -17,6 +19,10 @@ export function formatResultLines(
 		const answerLine = formatAnswerLine(question.label, answer, options.mode);
 		if (answerLine) {
 			lines.push(answerLine);
+		}
+
+		if (hasPresentedTypeOverride(question.type, question.presentedType)) {
+			hasPresentationOverride = true;
 		}
 
 		const questionNoteLine = formatQuestionNoteLine(
@@ -29,6 +35,10 @@ export function formatResultLines(
 		}
 
 		lines.push(...formatOptionNoteLines(question.label, answer, options.mode));
+	}
+
+	if (hasPresentationOverride) {
+		lines.push(formatPresentationNoteLine(options.mode));
 	}
 
 	return lines;
@@ -50,6 +60,19 @@ function formatAnswerLine(
 		return `✓ ${questionLabel}: (wrote) ${answerText}`;
 	}
 	return `✓ ${questionLabel}: ${answerText}`;
+}
+
+function hasPresentedTypeOverride(
+	type: string,
+	presentedType: string | undefined
+): boolean {
+	return !!presentedType && presentedType !== type;
+}
+
+function formatPresentationNoteLine(mode: "summary" | "render"): string {
+	const text =
+		"Note: Some questions were presented as multi-select by user preference.";
+	return mode === "summary" ? text : `  ${text}`;
 }
 
 function formatQuestionNoteLine(

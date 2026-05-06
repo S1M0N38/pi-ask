@@ -13,7 +13,7 @@ function expectedConfigFile(
 	overrides: { behaviour?: typeof DEFAULT_ASK_CONFIG.behaviour } = {}
 ) {
 	return {
-		schemaVersion: 4,
+		schemaVersion: 5,
 		answer: DEFAULT_ASK_CONFIG.answer,
 		behaviour: overrides.behaviour ?? DEFAULT_ASK_CONFIG.behaviour,
 		keymaps: DEFAULT_ASK_CONFIG.keymaps,
@@ -48,9 +48,8 @@ test("config store writes full normalized config on save", async () => {
 
 	await store.save({
 		behaviour: {
+			...DEFAULT_ASK_CONFIG.behaviour,
 			autoSubmitWhenAnsweredWithoutNotes: true,
-			confirmDismissWhenDirty: true,
-			doublePressReviewShortcuts: true,
 			showFooterHints: false,
 		},
 		keymaps: DEFAULT_ASK_CONFIG.keymaps,
@@ -61,9 +60,8 @@ test("config store writes full normalized config on save", async () => {
 		JSON.parse(content),
 		expectedConfigFile({
 			behaviour: {
+				...DEFAULT_ASK_CONFIG.behaviour,
 				autoSubmitWhenAnsweredWithoutNotes: true,
-				confirmDismissWhenDirty: true,
-				doublePressReviewShortcuts: true,
 				showFooterHints: false,
 			},
 		})
@@ -158,9 +156,8 @@ test("config store migrates the legacy root config path into extensions", async 
 		JSON.parse(await readFile(path, "utf-8")),
 		expectedConfigFile({
 			behaviour: {
+				...DEFAULT_ASK_CONFIG.behaviour,
 				autoSubmitWhenAnsweredWithoutNotes: true,
-				confirmDismissWhenDirty: true,
-				doublePressReviewShortcuts: true,
 				showFooterHints: false,
 			},
 		})

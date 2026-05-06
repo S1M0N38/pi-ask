@@ -4,6 +4,7 @@ import { createInitialState as createBaseState } from "./transitions.ts";
 
 interface CreateInitialStateOptions {
 	allowFreeform?: boolean;
+	presentSingleAsMulti?: boolean;
 }
 
 export function createInitialState(

@@ -5,8 +5,8 @@ import {
 	type AskConfigVersionMigrationResult,
 	migrateAskConfigFileToCurrent,
 } from "./migrations/index.ts";
-import type { AskConfig, AskConfigFileV4 } from "./schema.ts";
-import { validateAskConfigFileV4 } from "./schema.ts";
+import type { AskConfig, AskConfigFileV5 } from "./schema.ts";
+import { validateAskConfigFileV5 } from "./schema.ts";
 
 export class AskConfigMigrationError extends Error {
 	readonly reason: "invalid_or_unsupported" | "migration_failed";
@@ -39,14 +39,14 @@ export function migrateAskConfig(raw: unknown): AskConfigMigrationResult {
 		);
 	}
 
-	if (!validateAskConfigFileV4.Check(migratedFile.config)) {
+	if (!validateAskConfigFileV5.Check(migratedFile.config)) {
 		throw new AskConfigMigrationError(
 			"Config was invalid or unsupported.",
 			"invalid_or_unsupported"
 		);
 	}
 
-	const currentFile = migratedFile.config as AskConfigFileV4;
+	const currentFile = migratedFile.config as AskConfigFileV5;
 	const config = normalizeAskConfig(currentFile);
 	const keymapsResult = normalizeConfiguredKeymaps(currentFile.keymaps);
 	if (!keymapsResult.ok) {

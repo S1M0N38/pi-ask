@@ -4,7 +4,7 @@ import {
 } from "../constants/keymaps.ts";
 import type {
 	AskConfig,
-	AskConfigFileV4,
+	AskConfigFileV5,
 	AskConfigKeymaps,
 	AskNotificationChannel,
 } from "./schema.ts";
@@ -27,6 +27,7 @@ export const DEFAULT_ASK_CONFIG: AskConfig = {
 		autoSubmitWhenAnsweredWithoutNotes: false,
 		confirmDismissWhenDirty: true,
 		doublePressReviewShortcuts: true,
+		presentSingleAsMulti: false,
 		showFooterHints: true,
 	},
 	keymaps: cloneKeymaps(DEFAULT_ASK_KEYMAPS),
@@ -37,7 +38,7 @@ export const DEFAULT_ASK_CONFIG: AskConfig = {
 };
 
 export function normalizeAskConfig(
-	config?: Partial<AskConfigFileV4> | AskConfig
+	config?: Partial<AskConfigFileV5> | AskConfig
 ): AskConfig {
 	return {
 		answer: {
@@ -68,6 +69,9 @@ export function normalizeAskConfig(
 			showFooterHints:
 				config?.behaviour?.showFooterHints ??
 				DEFAULT_ASK_CONFIG.behaviour.showFooterHints,
+			presentSingleAsMulti:
+				config?.behaviour?.presentSingleAsMulti ??
+				DEFAULT_ASK_CONFIG.behaviour.presentSingleAsMulti,
 		},
 		keymaps: mergeKeymaps(config?.keymaps),
 		notifications: {
@@ -79,10 +83,10 @@ export function normalizeAskConfig(
 	};
 }
 
-export function toAskConfigFileV4(config: AskConfig): AskConfigFileV4 {
+export function toAskConfigFileV5(config: AskConfig): AskConfigFileV5 {
 	const normalized = normalizeAskConfig(config);
 	return {
-		schemaVersion: 4,
+		schemaVersion: 5,
 		answer: {
 			extractionModels: normalized.answer.extractionModels,
 			extractionRetries: normalized.answer.extractionRetries,
@@ -94,6 +98,7 @@ export function toAskConfigFileV4(config: AskConfig): AskConfigFileV4 {
 			confirmDismissWhenDirty: normalized.behaviour.confirmDismissWhenDirty,
 			doublePressReviewShortcuts:
 				normalized.behaviour.doublePressReviewShortcuts,
+			presentSingleAsMulti: normalized.behaviour.presentSingleAsMulti,
 			showFooterHints: normalized.behaviour.showFooterHints,
 		},
 		keymaps: cloneKeymaps(normalized.keymaps),
@@ -117,6 +122,7 @@ function cloneKeymaps(keymaps: AskConfigKeymaps): AskConfigKeymaps {
 		},
 		main: {
 			cancel: [...keymaps.main.cancel],
+			changeQuestionType: [...keymaps.main.changeQuestionType],
 			confirm: [...keymaps.main.confirm],
 			nextOption: [...keymaps.main.nextOption],
 			nextTab: [...keymaps.main.nextTab],

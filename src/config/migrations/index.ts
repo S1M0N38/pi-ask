@@ -1,7 +1,7 @@
 import { normalizeLegacyFlatKeymaps } from "../../constants/keymaps.ts";
 import type { AskConfigMigration, VersionedAskConfigFile } from "./types.ts";
 
-export const CURRENT_ASK_CONFIG_SCHEMA_VERSION = 4;
+export const CURRENT_ASK_CONFIG_SCHEMA_VERSION = 5;
 
 const ASK_CONFIG_MIGRATIONS: AskConfigMigration[] = [
 	{
@@ -33,7 +33,39 @@ const ASK_CONFIG_MIGRATIONS: AskConfigMigration[] = [
 			schemaVersion: 4,
 		}),
 	},
+	{
+		from: 4,
+		to: 5,
+		migrate: (config) => ({
+			...config,
+			behaviour: {
+				...((config.behaviour as Record<string, unknown> | undefined) ?? {}),
+				presentSingleAsMulti: false,
+			},
+			keymaps: addV5Keymaps(config.keymaps),
+			schemaVersion: 5,
+		}),
+	},
 ];
+
+function addV5Keymaps(keymaps: unknown): unknown {
+	if (!(keymaps && typeof keymaps === "object" && "main" in keymaps)) {
+		return keymaps;
+	}
+	const current = keymaps as Record<string, unknown>;
+	const main = current.main;
+	if (!(main && typeof main === "object")) {
+		return keymaps;
+	}
+	return {
+		...current,
+		main: {
+			...(main as Record<string, unknown>),
+			changeQuestionType: (main as Record<string, unknown>)
+				.changeQuestionType ?? ["t"],
+		},
+	};
+}
 
 export class AskConfigVersionMigrationError extends Error {
 	readonly reason: "invalid_or_unsupported" | "migration_failed";

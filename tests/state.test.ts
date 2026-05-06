@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createInitialState } from "../src/state/create.ts";
+import { cycleCurrentQuestionType } from "../src/state/question-type.ts";
 
 const DUPLICATE_QUESTION_ID_RE = /duplicate question id "scope"/;
 const DUPLICATE_OPTION_VALUE_RE = /duplicate option value "small"/;
@@ -296,6 +297,140 @@ test("single-select space toggles the active option without advancing", () => {
 	assert.equal(state.answers.lang, undefined);
 	assert.equal(state.activeTabIndex, 0);
 	assert.equal(state.view.kind, "navigate");
+});
+
+test("presentSingleAsMulti handles requested single questions as multi-select", () => {
+	let state = createInitialState(sampleParams(), {
+		presentSingleAsMulti: true,
+	});
+
+	assert.equal(state.questions[0].type, "multi");
+	assert.equal(state.questions[0].requestedType, "single");
+	assert.equal(state.questions[0].presentedType, "multi");
+
+	state = toggleCurrentMultiOption(state);
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+
+	assert.equal(state.activeTabIndex, 0);
+	assert.deepEqual(
+		state.answers.lang.selected.map((selection) => selection.label),
+		["Python", "TypeScript"]
+	);
+});
+
+test("question type hotkey toggles single and multi while preserving requested type", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick one",
+				options: [
+					{ value: "a", label: "A", preview: "Preview A" },
+					{ value: "b", label: "B", preview: "Preview B" },
+				],
+			},
+		],
+	});
+
+	let result = cycleCurrentQuestionType(state);
+	state = result.state;
+	assert.equal(result.needsConfirmation, false);
+	assert.equal(state.questions[0].type, "multi");
+	assert.equal(state.questions[0].requestedType, "single");
+	assert.equal(state.questions[0].presentedType, "multi");
+
+	result = cycleCurrentQuestionType(state);
+	state = result.state;
+	assert.equal(state.questions[0].type, "single");
+	assert.equal(state.questions[0].presentedType, undefined);
+});
+
+test("question type hotkey toggles preview questions with multi only", () => {
+	let state = createInitialState({
+		questions: [
+			{
+				id: "q1",
+				prompt: "Pick one",
+				type: "preview",
+				options: [{ value: "a", label: "A", preview: "Preview A" }],
+			},
+		],
+	});
+
+	let result = cycleCurrentQuestionType(state);
+	state = result.state;
+
+	assert.equal(result.needsConfirmation, false);
+	assert.equal(state.questions[0].type, "multi");
+	assert.equal(state.questions[0].requestedType, "preview");
+	assert.equal(state.questions[0].presentedType, "multi");
+
+	result = cycleCurrentQuestionType(state);
+	state = result.state;
+
+	assert.equal(result.needsConfirmation, false);
+	assert.equal(state.questions[0].type, "preview");
+	assert.equal(state.questions[0].requestedType, "preview");
+	assert.equal(state.questions[0].presentedType, undefined);
+});
+
+test("question type hotkey requires confirmation before clearing multi answers", () => {
+	let state = createInitialState(sampleParams(), {
+		presentSingleAsMulti: true,
+	});
+	state = toggleCurrentMultiOption(state);
+	state = moveOption(state, 1);
+	state = toggleCurrentMultiOption(state);
+
+	let result = cycleCurrentQuestionType(state);
+	assert.equal(result.needsConfirmation, true);
+	assert.deepEqual(
+		result.state.answers.lang.selected.map((selection) => selection.value),
+		["py", "ts"]
+	);
+
+	result = cycleCurrentQuestionType(state, { confirmed: true });
+	state = result.state;
+	assert.equal(result.needsConfirmation, false);
+	assert.equal(state.questions[0].type, "single");
+	assert.equal(state.questions[0].presentedType, undefined);
+	assert.equal(state.answers.lang, undefined);
+});
+
+test("confirmed multi-to-single type change preserves custom text and notes", () => {
+	let state = createInitialState(
+		{
+			questions: [
+				{
+					id: "q1",
+					prompt: "Pick options",
+					type: "multi",
+					options: [
+						{ value: "a", label: "A" },
+						{ value: "b", label: "B" },
+					],
+				},
+			],
+		},
+		{ presentSingleAsMulti: true }
+	);
+	state = toggleCurrentMultiOption(state);
+	state = submitCustomAnswer(
+		{ ...state, view: { kind: "input", questionId: "q1" } },
+		"Custom"
+	);
+	state = enterQuestionNoteMode(state, "q1");
+	state = saveNote(state, "Keep note");
+
+	const result = cycleCurrentQuestionType(state, { confirmed: true });
+	state = result.state;
+
+	assert.equal(state.questions[0].type, "single");
+	assert.deepEqual(state.answers.q1.selected, []);
+	assert.equal(state.answers.q1.customText, "Custom");
+	assert.equal(state.answers.q1.customSelected, true);
+	assert.equal(state.answers.q1.note, "Keep note");
 });
 
 test("submit can complete even when some questions are unanswered", () => {
