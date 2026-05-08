@@ -14,6 +14,7 @@ import {
 	findLatestPayloadInCurrentBranch,
 } from "./ask-payload-store.ts";
 import {
+	cancelledAskResult,
 	invalidPayloadResponse,
 	successfulResponse,
 	validateParams,
@@ -263,22 +264,27 @@ async function runReplayCommand(
 	});
 }
 
-async function runAskAndSendSubmittedResult(
+export async function runAskAndSendSubmittedResult(
 	pi: Pick<ExtensionAPI, "sendUserMessage" | "events">,
 	ctx: ExtensionContext,
 	params: AskParams,
 	options: { allowFreeform: boolean }
 ): Promise<void> {
 	pi.events.emit("ask:started", params);
-	const result = await withHiddenWorkingRow(ctx, () =>
-		runAskFlow(ctx, params, options)
-	);
-	pi.events.emit("ask:completed", result);
-	if (result.cancelled) {
-		ctx.ui.notify("Ask form cancelled.", "info");
-		return;
+	try {
+		const result = await withHiddenWorkingRow(ctx, () =>
+			runAskFlow(ctx, params, options)
+		);
+		pi.events.emit("ask:completed", result);
+		if (result.cancelled) {
+			ctx.ui.notify("Ask form cancelled.", "info");
+			return;
+		}
+		sendAskResult(pi, result, ctx);
+	} catch (error) {
+		pi.events.emit("ask:completed", cancelledAskResult(params));
+		throw error;
 	}
-	sendAskResult(pi, result, ctx);
 }
 
 async function withHiddenWorkingRow<T>(

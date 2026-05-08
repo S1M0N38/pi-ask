@@ -81,6 +81,21 @@ export function successfulResponse(result: AskResult) {
 	};
 }
 
+export function cancelledAskResult(params: AskParams): AskResult {
+	return {
+		answers: {},
+		cancelled: true,
+		mode: "submit",
+		questions: params.questions.map((q) => ({
+			id: q.id,
+			label: q.label ?? q.prompt,
+			prompt: q.prompt,
+			type: q.type ?? "single",
+		})),
+		title: params.title,
+	};
+}
+
 type ToolTheme = ExtensionContext["ui"]["theme"];
 
 export function renderAskToolCall(args: unknown, theme: ToolTheme) {

@@ -290,7 +290,7 @@ It is advisory only. If there is any conflict, contract + tests win.
 pi-ask emits two events on `pi.events` for inter-extension communication:
 
 - **`ask:started`** — emitted after validation, before the ask UI opens. Payload is the validated `AskParams` (`title`, `questions` with prompts/labels/options). Useful for recalling user attention via TTS or notifications.
-- **`ask:completed`** — emitted after the ask flow closes. Payload is `AskResult` (see Output section). Covers all outcomes: submitted, elaborated, and cancelled.
+- **`ask:completed`** — emitted after the ask flow closes. Payload is `AskResult` (see Output section). Covers all outcomes: submitted, elaborated, and cancelled. `ask:started` is always followed by `ask:completed`, even when the flow fails unexpectedly (in which case the result has `cancelled: true` and empty answers).
 
 Neither event is emitted on validation failure or in non-interactive mode (`ctx.hasUI === false`).
 

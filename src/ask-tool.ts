@@ -6,6 +6,7 @@ import { appendAskPayload } from "./ask-payload-store.ts";
 import {
 	ASK_TOOL_DESCRIPTION,
 	ASK_TOOL_PROMPT_GUIDELINES,
+	cancelledAskResult,
 	invalidPayloadResponse,
 	nonInteractiveResponse,
 	renderAskToolCall,
@@ -70,6 +71,9 @@ async function executeAskTool(
 		const result = await runAskFlow(ctx, params);
 		pi.events.emit("ask:completed", result);
 		return successfulResponse(result);
+	} catch (error) {
+		pi.events.emit("ask:completed", cancelledAskResult(params));
+		throw error;
 	} finally {
 		ctx.ui.setWorkingVisible(true);
 	}
