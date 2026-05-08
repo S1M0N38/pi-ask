@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { registerAskTool } from "../src/ask-tool.ts";
-import type { AskParams } from "../src/types.ts";
+import type { AskParams, AskResult } from "../src/types.ts";
 
 const NON_INTERACTIVE_MESSAGE_RE =
 	/Needs user input: ask_user requires interactive UI\./;
@@ -368,7 +368,7 @@ test("ask tool transcript renderers summarize call and cancelled result", () => 
 	assert.equal(invalidText, "Invalid input");
 });
 
-test("ask tool emits ask:started and ask:completed events in non-interactive mode", async () => {
+test("ask tool does not emit events in non-interactive mode", async () => {
 	const { emitted, tool } = registerMockTool();
 
 	await tool.execute("call-1", sampleParams(), undefined, noop, makeCtx(false));
@@ -388,4 +388,67 @@ test("ask tool does not emit events on validation failure", async () => {
 	);
 
 	assert.equal(emitted.length, 0);
+});
+
+const TUI_FAILURE_RE = /TUI failure/;
+
+test("ask tool emits ask:started and ask:completed in interactive mode", async () => {
+	const { emitted, tool } = registerMockTool();
+	const mockResult: AskResult = {
+		answers: { goal: { values: ["speed"], labels: ["Speed"], indices: [0] } },
+		cancelled: false,
+		mode: "submit",
+		questions: [
+			{
+				id: "goal",
+				label: "Goal",
+				prompt: "What should I optimize for?",
+				type: "single",
+			},
+		],
+		title: "Clarify next step",
+	};
+	const ctx = {
+		[HAS_UI]: true,
+		ui: {
+			custom: () => Promise.resolve(mockResult),
+			setWorkingVisible() {
+				// intentional no-op in test
+			},
+		},
+		cwd: "/tmp",
+	};
+
+	await tool.execute("call-1", sampleParams(), undefined, noop, ctx);
+
+	assert.equal(emitted.length, 2);
+	assert.equal(emitted[0].channel, "ask:started");
+	assert.equal(emitted[1].channel, "ask:completed");
+	assert.equal((emitted[1].data as AskResult).cancelled, false);
+	assert.deepEqual((emitted[1].data as AskResult).answers, mockResult.answers);
+});
+
+test("ask tool emits paired events even when the ask flow fails", async () => {
+	const { emitted, tool } = registerMockTool();
+	const ctx = {
+		[HAS_UI]: true,
+		ui: {
+			custom: () => Promise.reject(new Error("TUI failure")),
+			setWorkingVisible() {
+				// intentional no-op in test
+			},
+		},
+		cwd: "/tmp",
+	};
+
+	await assert.rejects(
+		() => tool.execute("call-1", sampleParams(), undefined, noop, ctx),
+		TUI_FAILURE_RE
+	);
+
+	assert.equal(emitted.length, 2);
+	assert.equal(emitted[0].channel, "ask:started");
+	assert.equal(emitted[1].channel, "ask:completed");
+	assert.equal((emitted[1].data as AskResult).cancelled, true);
+	assert.deepEqual((emitted[1].data as AskResult).answers, {});
 });
